@@ -37,15 +37,22 @@ void UnitEntity::update()
 
 	if(!currentSquad->getIsEnemySquad())
 	{
-		checkDirectEnemy();
-
-		setSquadAction(currentSquad->getCurrentAction());
-
 		++m_frameCount;
 
-		Action unitAction = calculateUnitAction();
-		assert(unitAction != COUNT);
-		setUnitAction(unitAction);
+		if(canIssueNextAction())
+		{
+			checkDirectEnemy();
+
+			setSquadAction(currentSquad->getCurrentAction());
+
+
+			Action unitAction = calculateUnitAction();
+			assert(unitAction != COUNT);
+			{
+				setUnitAction(unitAction);
+			}
+		}
+
 
 	}
 }
@@ -288,18 +295,14 @@ bool UnitEntity::checkCanIssueNextAction()
 	}
 	else if(m_unitAction == ATTACK_SURROUND)
 	{
-		//SquadEntity* enemySquad = m_squad->getEnemySquad();
-		//Position enemyPos = enemySquad->getAvgPosition();
+		//TODO 
 
-		//if(Common::computeSqDistBetweenPoints(m_posToSurround, enemyPos) > 50 * 50)
-		//{
-		//	m_unitAction = COUNT;
-		//	m_canIssueNextAction = true;
-		//}
-		//else
-		//{
-		//	m_canIssueNextAction = false;
-		//}
+		if(m_frameCount > 5)
+		{
+			m_unitAction = COUNT;
+			m_canIssueNextAction = true;
+			m_frameCount = 0;
+		}
 	}
 	else if(m_unitAction == HOLD || m_unitAction == FLEE)
 	{
