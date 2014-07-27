@@ -27,7 +27,7 @@ SApair::SApair()
 {
 }
 
-USApair::USApair(UnitState stateNew, Action actionNew)
+USApair::USApair(UnitState stateNew, UnitAction actionNew)
 {
 	state = stateNew;
 	action = actionNew;
@@ -45,6 +45,7 @@ QLearningMgr::QLearningMgr()
 	q_mapUnit = new std::map<USApair, float, unitCompare>;
 	q_countUnit = new std::map<USApair, int, unitCompare>;
 	m_forceReward = 0.0f;
+	m_forceUnitReward = 0.0f;
 }
 
 
@@ -322,7 +323,7 @@ float QLearningMgr::getOptimalFutureValue(State state, Action& outNewAction)
 
 
 
-float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNewAction)
+float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, UnitAction& outNewAction)
 {
 	//TODO
 	float exploreExploitRand = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) - 1;
@@ -334,9 +335,9 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNew
 
 		bool stateFound = false;
 
-		for(int act = 0; act < COUNT; act++)
+		for(int act = SQUAD_ACTION; act < UNIT_COUNT; act++)
 		{
-			USApair usapair = USApair(state, (Action)act);
+			USApair usapair = USApair(state, (UnitAction)act);
 
 			map<USApair, float, unitCompare>::iterator it = q_mapUnit->find(usapair);
 			if(it != q_mapUnit->end())
@@ -347,7 +348,7 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNew
 				if(currentQValue > maxValue)
 				{
 					maxValue = currentQValue;
-					outNewAction = (Action)act;
+					outNewAction = (UnitAction)act;
 				}
 			}
 		}
@@ -358,7 +359,7 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNew
 		}
 		else
 		{
-			outNewAction = (Action)0;
+			outNewAction = (UnitAction)0;
 			return 0.0f;
 		}
 	}
@@ -368,9 +369,9 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNew
 		bool stateFound = false;
 		int numTimesStateVisited = 100000;
 
-		for(int act = 0; act < COUNT; act++)
+		for(int act = SQUAD_ACTION; act < UNIT_COUNT; act++)
 		{
-			USApair usapair = USApair(state, (Action)act);
+			USApair usapair = USApair(state, (UnitAction)act);
 
 			map<USApair, float, unitCompare>::iterator it = q_mapUnit->find(usapair);
 			if(it != q_mapUnit->end())
@@ -382,7 +383,7 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNew
 					{
 						stateFound = true;
 						numTimesStateVisited = it_count->second;
-						outNewAction = (Action)(it_count->first.action);
+						outNewAction = (UnitAction)(it_count->first.action);
 						qValue = it->second;
 					}
 				}
@@ -393,7 +394,7 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNew
 			}
 			else
 			{
-				outNewAction =(Action)act;
+				outNewAction =(UnitAction)act;
 				return 0.0f;
 			}
 		}
@@ -405,7 +406,7 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNew
 		}
 		else
 		{
-			outNewAction = (Action)0;
+			outNewAction = (UnitAction)0;
 			return 0.0f;
 		}
 	}
@@ -414,31 +415,6 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, Action& outNew
 
 Action QLearningMgr::getAction(State state)
 {
-	//for(int act = 0; act < COUNT; act++)
-	//{
-	//	SApair sapair;
-	//	sapair.action = (Action)act;
-	//	sapair.state = state;
-
-	//	map<SApair, int, compare>::iterator it = q_count->find(sapair);
-
-	//	if(it != q_count->end())
-	//	{
-	//		//Explore each state action a total of 5 times
-	//		//TODO - find a better way to do this
-	//		if(it->second < 5)
-	//		{
-	//			it->second++;
-	//			return (Action)act;
-	//		}
-	//	}
-	//	else
-	//	{
-	//		return (Action)act;
-	//	}
-	//}
-	//return (Action)0;
-
 	if(m_totalNumStatesVisited < 200)
 	{
 		return (Action)0;
@@ -477,10 +453,10 @@ void QLearningMgr::writeToStream()
 void QLearningMgr::readFromStream()
 {
 	struct stat results;
-	stat("qmap.bin", &results);
+	stat("FerranBotData\\qmap.bin", &results);
 
 	//std::map<SApair, float, compare>* readMap = new std::map<SApair, float, compare>;
-	ifstream ifs_map("qmap.bin", ios::binary);
+	ifstream ifs_map("FerranBotData\\qmap.bin", ios::binary);
 	if(!ifs_map.fail())
 	{
 		ifs_map.seekg(0, ios::beg);
@@ -498,15 +474,41 @@ void QLearningMgr::readFromStream()
 		}
 	}
 
-
 	ifs_map.close();
 
 
 
-	stat("qcount.bin", &results);
+
+	stat("FerranBotData\\qmapUnit.bin", &results);
+
+	//std::map<SApair, float, compare>* readMap = new std::map<SApair, float, compare>;
+	ifstream ifs_mapUnit("FerranBotData\\qmapUnit.bin", ios::binary);
+	if(!ifs_mapUnit.fail())
+	{
+		ifs_mapUnit.seekg(0, ios::beg);
+		while(ifs_mapUnit.eof() == false)
+		{
+			USApair usapair;
+			float qvalue;
+			ifs_mapUnit.read((char*)&usapair, sizeof(USApair));
+			//ifs_map.seekg(sizeof(SApair), ios::cur);
+			ifs_mapUnit.read((char*)&qvalue, sizeof(float));
+			//ifs_map.seekg(sizeof(float), ios::cur);
+
+			q_mapUnit->insert(std::pair<USApair, float>(usapair, qvalue));
+
+		}
+	}
+
+	ifs_mapUnit.close();
+
+
+
+
+	stat("FerranBotData\\qcount.bin", &results);
 
 	//std::map<SApair, int, compare>* readCount = new std::map<SApair, int, compare>;
-	ifstream ifs_count("qcount.bin", ios::binary);
+	ifstream ifs_count("FerranBotData\\qcount.bin", ios::binary);
 
 	if(!ifs_count.fail())
 	{
@@ -526,9 +528,35 @@ void QLearningMgr::readFromStream()
 	ifs_count.close();
 
 
-	stat("qvars.bin", &results);
 
-	ifstream ifs_vars("qvars.bin", ios::binary);
+	stat("FerranBotData\\qcountUnit.bin", &results);
+
+	//std::map<SApair, int, compare>* readCount = new std::map<SApair, int, compare>;
+	ifstream ifs_countUnit("FerranBotData\\qcountUnit.bin", ios::binary);
+
+	if(!ifs_countUnit.fail())
+	{
+		ifs_countUnit.seekg(0, ios::beg);
+		while(ifs_countUnit.eof() == false)
+		{
+			USApair usapair;
+			int count;
+
+			ifs_countUnit.read((char*)&usapair, sizeof(USApair));
+			ifs_countUnit.read((char*)&count, sizeof(int));
+
+			q_countUnit->insert(std::pair<USApair, int>(usapair, count));
+		}
+	}
+
+	ifs_countUnit.close();
+
+
+
+
+	stat("FerranBotData\\qvars.bin", &results);
+
+	ifstream ifs_vars("FerranBotData\\qvars.bin", ios::binary);
 
 	if(!ifs_vars.fail())
 	{
@@ -636,11 +664,13 @@ float QLearningMgr::RunAwayForUnit(const UnitState& stateLast, const UnitState& 
 	{
 		if(stateNew.m_distToClosestEnemyGroup == LOW)
 		{
-			return -2.5f;
+			return 12.5f;
+			//return -2.5f;
 		}
 		else if(stateNew.m_distToClosestEnemyGroup == MID)
 		{
-			return -0.5f;
+			return 10.5f;
+			//return -0.5f;
 		}
 		else
 		{
@@ -651,11 +681,13 @@ float QLearningMgr::RunAwayForUnit(const UnitState& stateLast, const UnitState& 
 	{
 		if(stateNew.m_distToClosestEnemyGroup == LOW)
 		{
-			return -7.5f;
+			return 17.5f;
+			//return -7.5f;
 		}
 		else if(stateNew.m_distToClosestEnemyGroup == MID)
 		{
-			return -2.5f;
+			return 12.5f;
+			//return -2.5f;
 		}
 		else
 		{
@@ -667,7 +699,7 @@ float QLearningMgr::RunAwayForUnit(const UnitState& stateLast, const UnitState& 
 
 void QLearningMgr::writeQMapHumanReadable()
 {
-	ofstream ofs_human_readable_qmap("qmap_human_readable.txt");
+	ofstream ofs_human_readable_qmap("FerranBotData\\qmap_human_readable.txt");
 	std::map<SApair, float, compare>::iterator iter = q_map->begin();
 	std::map<SApair, int, compare>::iterator itercount = q_count->begin();
 
@@ -675,8 +707,9 @@ void QLearningMgr::writeQMapHumanReadable()
 	{
 		while(iter != q_map->end())
 		{
-			ofs_human_readable_qmap << "State dpsXHealth = " << iter->first.state.m_avgDpsXHealthGroup << " avgHealth =" 
-				<< iter->first.state.m_avgHealthGroup << " dist = " << iter->first.state.m_distToClosestEnemyGroup << " action = " << iter->first.action;
+			ofs_human_readable_qmap << "State dpsXHealth = " << TranslateGroupToWord(iter->first.state.m_avgDpsXHealthGroup) << " avgHealth = " 
+				<< TranslateGroupToWord(iter->first.state.m_avgHealthGroup) << " dist = " << TranslateGroupToWord(iter->first.state.m_distToClosestEnemyGroup) 
+				<< " action = " << TranslateActionToWord(iter->first.action);
 			ofs_human_readable_qmap << " q_value = " << iter->second;
 			ofs_human_readable_qmap << " visited = " << itercount->second << endl;
 
@@ -693,7 +726,7 @@ void QLearningMgr::writeQMapHumanReadable()
 	{
 		return;
 	}
-	ofstream ofs_human_readable_qmapUnit("qmapUnit_human_readable.txt");
+	ofstream ofs_human_readable_qmapUnit("FerranBotData\\qmapUnit_human_readable.txt");
 	std::map<USApair, float, unitCompare>::iterator iterUnitMap = q_mapUnit->begin();
 	std::map<USApair, int, unitCompare>::iterator iterUnitCount = q_countUnit->begin();
 	//std::map<SApair, float, compare>::iterator iter = q_mapUnit->begin();
@@ -703,8 +736,9 @@ void QLearningMgr::writeQMapHumanReadable()
 	{
 		while(iterUnitMap != q_mapUnit->end())
 		{
-			ofs_human_readable_qmapUnit << "State dpsXHealth = " << iterUnitMap->first.state.m_avgDpsXHealthGroup << " avgHealth =" 
-				<< iterUnitMap->first.state.m_avgHealthGroup << " dist = " << iterUnitMap->first.state.m_distToClosestEnemyGroup << " action = " << iterUnitMap->first.action;
+			ofs_human_readable_qmapUnit << "State dpsXHealth = " << TranslateGroupToWord(iterUnitMap->first.state.m_avgDpsXHealthGroup) << " avgHealth = " 
+				<< TranslateGroupToWord(iterUnitMap->first.state.m_avgHealthGroup) << " dist = " << TranslateGroupToWord(iterUnitMap->first.state.m_distToClosestEnemyGroup) 
+				<< " action = " << TranslateActionToWord(iterUnitMap->first.action);
 			ofs_human_readable_qmapUnit << " q_value = " << iterUnitMap->second;
 			ofs_human_readable_qmapUnit << " visited = " << iterUnitCount->second << endl;
 
@@ -718,7 +752,7 @@ void QLearningMgr::writeQMapHumanReadable()
 
 void QLearningMgr::writeQMapBinary()
 {
-	ofstream ofs_map("qmap.bin", ios::binary);
+	ofstream ofs_map("FerranBotData\\qmap.bin", ios::binary);
 	if(ofs_map.is_open())
 	{
 		std::map<SApair, float, compare>::iterator it = q_map->begin();
@@ -741,7 +775,7 @@ void QLearningMgr::writeQMapBinary()
 		return;
 	}
 
-	ofstream ofs_mapUnit("qmapUnit.bin", ios::binary);
+	ofstream ofs_mapUnit("FerranBotData\\qmapUnit.bin", ios::binary);
 	if(ofs_mapUnit.is_open())
 	{
 		std::map<USApair, float, unitCompare>::iterator it = q_mapUnit->begin();
@@ -761,7 +795,7 @@ void QLearningMgr::writeQMapBinary()
 
 void QLearningMgr::writeQCountBinary()
 {
-	ofstream ofs_count("qcount.bin", ios::binary);
+	ofstream ofs_count("FerranBotData\\qcount.bin", ios::binary);
 	if(ofs_count.is_open())
 	{
 		std::map<SApair, int, compare>::iterator itcount = q_count->begin();
@@ -782,15 +816,15 @@ void QLearningMgr::writeQCountBinary()
 		return;
 	}
 
-	ofstream ofs_countUnit("qcountUnit.bin", ios::binary);
+	ofstream ofs_countUnit("FerranBotData\\qcountUnit.bin", ios::binary);
 	if(ofs_countUnit.is_open())
 	{
 		std::map<USApair, int, unitCompare>::iterator itcountUnit = q_countUnit->begin();
 		//std::map<SApair, int, compare>::iterator itcount = q_count->begin();
 		while(itcountUnit != q_countUnit->end())
 		{
-			ofs_count.write((char*)&itcountUnit->first, sizeof(USApair));
-			ofs_count.write((char*)&itcountUnit->second, sizeof(int));
+			ofs_countUnit.write((char*)&itcountUnit->first, sizeof(USApair));
+			ofs_countUnit.write((char*)&itcountUnit->second, sizeof(int));
 			itcountUnit++;
 		}
 	}
@@ -801,7 +835,7 @@ void QLearningMgr::writeQCountBinary()
 
 void QLearningMgr::writeQVars()
 {
-	ofstream ofs_vars("qvars.bin", ios::binary);
+	ofstream ofs_vars("FerranBotData\\qvars.bin", ios::binary);
 	if(ofs_vars.is_open())
 	{
 		ofs_vars.write((char*)&m_exploreExploitCoef, sizeof(float));
@@ -811,7 +845,7 @@ void QLearningMgr::writeQVars()
 }
 
 
-Action QLearningMgr::updateUnitQ(UnitState lastState, Action lastUnitAction, Action lastSquadAction, UnitState stateNew)
+UnitAction QLearningMgr::updateUnitQ(UnitState lastState, UnitAction lastUnitAction, Action lastSquadAction, UnitState stateNew)
 {
 	//DEBUG
 	static bool m_forceExploration = true;
@@ -837,7 +871,7 @@ Action QLearningMgr::updateUnitQ(UnitState lastState, Action lastUnitAction, Act
 
 	//_DEBUG
 	USApair usapair = USApair(lastState, lastUnitAction);
-	Action outNewAction = ATTACK;
+	UnitAction outNewAction = UNIT_ATTACK;
 
 	if(q_mapUnit->find(usapair) != q_mapUnit->end())
 	{
@@ -857,7 +891,7 @@ Action QLearningMgr::updateUnitQ(UnitState lastState, Action lastUnitAction, Act
 	{
 		q_mapUnit->insert(std::pair<USApair, float>(usapair, 0.0f));
 		q_countUnit->insert(std::pair<USApair, int>(usapair, 0));
-		outNewAction = (Action)0;
+		outNewAction = SQUAD_ACTION;
 	}
 
 	return outNewAction;
@@ -880,7 +914,7 @@ float QLearningMgr::getRewardForUnit(USApair usapair, UnitState stateNew)
 	float reward = 0.0f;
 
 	//penalize changing action
-	if(usapair.state.m_unitAction != stateNew.m_unitAction || stateNew.m_unitAction != stateNew.m_squadAction)
+	if(usapair.state.m_lastUnitAction != stateNew.m_lastUnitAction || stateNew.m_lastUnitAction != SQUAD_ACTION)
 	{
 		reward -= 2.0f;
 	}
@@ -913,7 +947,7 @@ float QLearningMgr::getRewardForUnit(USApair usapair, UnitState stateNew)
 	{
 		//Low health and low dps => try to run away!
 		float rew = RunAwayForUnit(stateLast, stateNew);
-		reward -= rew;
+		reward += rew;
 	}
 	else if(stateLast.m_hitPoints <= stateNew.m_hitPoints) //we are not losing life
 	{
@@ -950,4 +984,64 @@ float QLearningMgr::getRewardForUnit(USApair usapair, UnitState stateNew)
 	}
 
 	return reward;
+}
+
+string QLearningMgr::TranslateGroupToWord(Group group)
+{
+	if(group == LOW)
+	{
+		return "LOW ";
+	}
+	else if(group == MID)
+	{
+		return "MID ";
+	}
+	else if(group == HIGH)
+	{
+		return "HIGH";
+	}
+	else
+	{
+		return "NA  ";
+	}
+}
+
+string QLearningMgr::TranslateActionToWord(int action)
+{
+	if(action == ATTACK)
+	{
+		return "ATTACK         ";
+	}
+	else if(action == HOLD)
+	{
+		return "HOLD           ";
+	}
+	else if(action == ATTACK_SURROUND)
+	{
+		return "ATTACK_SURROUND";
+	}
+	else if(action == COUNT)
+	{
+		return "COUNT          ";
+	}
+	else if(action == SQUAD_ACTION)
+	{
+		return "SQUAD_ACTION   ";
+	}
+	else if(action == UNIT_ATTACK)
+	{
+		return "UNIT_ATTACK    ";
+	}
+	else if(action == UNIT_HOLD)
+	{
+		return "UNIT_HOLD      ";
+	}
+	else if(action == UNIT_FLEE)
+	{
+		return "UNIT_FLEE      ";
+	}
+	else
+	{
+		return "UNIT_COUNT     ";
+	}
 }

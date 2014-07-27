@@ -66,27 +66,31 @@ void SquadManager::update()
 
 
 		//FOR EACH SQUAD
-	for(std::vector<SquadEntity*>::iterator squad = SquadManager::getInstance()->getSquads()->begin(); squad != SquadManager::getInstance()->getSquads()->end(); ++squad)
+	for(std::vector<SquadEntity*>::iterator squadEntity = SquadManager::getInstance()->getSquads()->begin(); squadEntity != SquadManager::getInstance()->getSquads()->end(); ++squadEntity)
 	{
-		State stateNew = (*squad)->getCurrentState();
-		if((*squad)->getNumUnits() > 0)
+		SquadEntity* squad = (*squadEntity);
+		State stateNew = squad->getCurrentState();
+		if(squad->getNumUnits() > 0)
 		{
-			Action action = QLearningMgr::getInstance()->updateSquadQ((*squad)->getLastState(), (*squad)->getLastAction(), stateNew);
+			if(squad->canIssueNextAction())
+			{
+				Action action = QLearningMgr::getInstance()->updateSquadQ(squad->getLastState(), squad->getLastAction(), stateNew);
 
-			Broodwar->sendText("Last State H %d DPS %d dist %d Action %d", (*squad)->getLastState().m_avgHealthGroup, (*squad)->getLastState().m_avgDpsXHealthGroup, (*squad)->getLastState().m_distToClosestEnemyGroup, (*squad)->getLastAction());
-			assert(action >= ATTACK && action <= COUNT);
+				Broodwar->sendText("Last State H %d DPS %d dist %d Action %d", squad->getLastState().m_avgHealthGroup, squad->getLastState().m_avgDpsXHealthGroup, squad->getLastState().m_distToClosestEnemyGroup, squad->getLastAction());
+				assert(action >= ATTACK && action <= COUNT);
 
-			(*squad)->setLastAction((*squad)->getCurrentAction());
+				squad->setLastAction(squad->getCurrentAction());
 
-			(*squad)->setCurrentAction(action);
-			
-			(*squad)->setCanIssueNextAction(false);
+				squad->setCurrentAction(action);
 
-			(*squad)->setLastState(stateNew);
+				squad->setCanIssueNextAction(false);
 
+				squad->setLastState(stateNew);
 
-			//squad->applyCurrentAction();
+				squad->applyCurrentAction();
+			}
 
+			squad->checkCanIssueNextAction();
 		}
 	}
 }
