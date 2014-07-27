@@ -68,25 +68,32 @@ void UnitManager::update()
 
 
 
-	for(vector<UnitEntity*>::iterator unit = m_allUnitEntities.begin(); unit != m_allUnitEntities.end(); unit++)
+	for(vector<UnitEntity*>::iterator unitEntity = m_allUnitEntities.begin(); unitEntity != m_allUnitEntities.end(); unitEntity++)
 	{
-		if(!(*unit)->getIsEnemyUnit() && (*unit)->canIssueNextAction())
+		UnitEntity* unit = (*unitEntity);
+		if(!unit->getIsEnemyUnit())
 		{
-			UnitState stateNew = (*unit)->getCurrentUnitState();
+			UnitState stateNew = unit->getCurrentUnitState();
 
-			if((*unit)->canIssueNextAction())
+			if(unit->canIssueNextAction())
 			{
-				QLearningMgr::getInstance()->updateUnitQ((*unit)->getLastUnitState(), (*unit)->getLastUnitAction(), (*unit)->getLastSquadAction(), stateNew);
+				UnitAction unitAction = QLearningMgr::getInstance()->updateUnitQ(unit->getLastUnitState(), unit->getLastUnitAction(), unit->getLastSquadAction(), stateNew);
 
-				(*unit)->setCanIssueNextAction(false);
-				(*unit)->setLastUnitAction((*unit)->getCurrentUnitAction());
-				(*unit)->setLastSquadAction((*unit)->getCurrentSquadAction());
+				unit->setLastUnitAction(unit->getCurrentUnitAction());
+				unit->setUnitAction(unitAction);
+				//unit->setLastSquadAction(unit->getCurrentSquadAction());
+				unit->setLastSquadAction(unit->getLastSquadAction());
 
-				(*unit)->applyCurrentUnitAction();
+				unit->setCanIssueNextAction(false);
+
+				unit->setLastUnitState(stateNew);
+
+				unit->applyCurrentUnitAction();
 			}
+
+			unit->checkCanIssueNextAction();
 		}
 
-		(*unit)->checkCanIssueNextAction();
 
 
 		//Position posLeftTop = (*unit)->getPosition();
@@ -116,15 +123,6 @@ void UnitManager::update()
 	}
 }
 
-//struct Eraser
-//{
-//	Eraser(UnitEntity* unitEntity) : unitEntity(unitEntity) {}
-//	UnitEntity* unitEntity;
-//	bool operator()(UnitEntity* unitEntity) const
-//	{
-//		return unitEntity->getUnit()->getHitPoints() <= 0;
-//	}
-//};
 
 bool checkNoHitPoints(const UnitEntity* unitEntity)
 {
@@ -133,23 +131,7 @@ bool checkNoHitPoints(const UnitEntity* unitEntity)
 
 void UnitManager::removeDeadUnits()
 {
-	//vector<UnitEntity*> entitiesToRemove;
-	//for(vector<UnitEntity*>::iterator unit = m_allUnitEntities.begin(); unit != m_allUnitEntities.end(); unit++)
-	//{
-	//	//if((*unit)->getUnitIterator()->getHitPoints() <= 0)
-	//	if((*unit)->getUnit()->getHitPoints() <= 0)
-	//	{
-	//		entitiesToRemove.push_back((*unit));
-	//	}
-	//}
-
 	m_allUnitEntities.erase(remove_if(m_allUnitEntities.begin(), m_allUnitEntities.end(), checkNoHitPoints), m_allUnitEntities.end());
-	//m_allUnitEntities.erase(remove(m_allUnitEntities.begin(), m_allUnitEntities.end(), ))
-
-	//for(vector<UnitEntity*>::iterator deadUnit = entitiesToRemove.begin(); deadUnit != entitiesToRemove.end(); deadUnit++)
-	//{
-	//	m_allUnitEntities.erase(deadUnit);
-	//}
 }
 
 void UnitManager::removeAllUnitEntities()
@@ -159,4 +141,3 @@ void UnitManager::removeAllUnitEntities()
 		m_allUnitEntities.pop_back();
 	}
 }
-

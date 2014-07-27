@@ -7,12 +7,17 @@
 
 typedef enum x{ATTACK				= 0, //Direct attack
 			   HOLD					= 1, 
-			   FLEE					= 2,
-			   ATTACK_SURROUND		= 3,
-			   COUNT				= 4} Action;
+			   ATTACK_SURROUND		= 2,
+			   COUNT				= 3} Action;
+
+typedef enum y{SQUAD_ACTION				= 10,
+			   UNIT_ATTACK				= 11,
+			   UNIT_HOLD				= 12,
+			   UNIT_FLEE				= 13,
+			   UNIT_COUNT				= 14} UnitAction;;
 
 
-typedef enum y{NA		= -1, //Not Available
+typedef enum z{NA		= -1, //Not Available
 			   LOW		= 0,
 			   MID		= 1,
 			   HIGH		= 2} Group;
@@ -46,8 +51,8 @@ struct UnitState
 	Group  m_distToClosestEnemyGroup; //CLOSE, MID-RANGE, FAR
 	int    m_hitPoints;
 	int    m_enemyHitPoints;
-	Action m_unitAction;
-	Action m_squadAction;
+	UnitAction m_lastUnitAction;
+	Action m_lastSquadAction;
 
 	//Transform int to Group
 	void setAvgDpsXHealth(Group num);

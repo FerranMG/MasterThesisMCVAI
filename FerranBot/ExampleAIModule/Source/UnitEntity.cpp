@@ -11,12 +11,21 @@ UnitEntity::UnitEntity(BWAPI::Unitset::iterator unit)
 	m_unitIterator = unit;
 	m_unit = *unit;
 
+	m_directEnemy = nullptr;
+	m_squad = nullptr;
+	m_squadAction = COUNT;
+	m_unitAction = UNIT_COUNT;
 
+	m_currentActionTilePos = Position(-1, -1);
 	m_lastActionTilePos = Position(-1, -1);
+	m_lastActionTilePos = Position(-1, -1);
+	m_lastUnitAttacked = nullptr;
+
+	m_isEnemyUnit = false;
 
 	m_lastUnitState = UnitState();
 
-	m_lastUnitAction = COUNT;
+	m_lastUnitAction = UNIT_COUNT;
 	m_lastSquadAction = COUNT;
 
 	m_canIssueNextAction = true;
@@ -43,14 +52,20 @@ void UnitEntity::update()
 		{
 			checkDirectEnemy();
 
-			setSquadAction(currentSquad->getCurrentAction());
+			Action squadAction = currentSquad->getCurrentAction();
+			setSquadAction(squadAction);
 
+			Action lastSquadAction = currentSquad->getLastAction();
+			setLastSquadAction(lastSquadAction);
 
-			Action unitAction = calculateUnitAction();
-			assert(unitAction != COUNT);
-			{
-				setUnitAction(unitAction);
-			}
+			//if(squadAction == ATTACK)
+			//{
+			//	m_currentUnitAttacked = currentSquad->getUnitToAttack(this);
+			//}
+			//else if(squadAction == ATTACK_SURROUND)
+			//{
+			//	m_currentActionTilePos = currentSquad->getActionTilePosForSurround(this);
+			//}
 		}
 
 
@@ -77,7 +92,7 @@ void UnitEntity::setSquadAction(Action action)
 }
 
 
-void UnitEntity::setUnitAction(Action action)
+void UnitEntity::setUnitAction(UnitAction action)
 {
 	m_unitAction = action;
 }
@@ -89,12 +104,13 @@ BWAPI::Unitset::iterator UnitEntity::getUnitIterator() const
 }
 
 
-Action UnitEntity::calculateUnitAction()
+UnitAction UnitEntity::calculateUnitAction()
 {
 	//TODO - eg, if there's an enemy unit attacking this unit and it will die, then flee, regarding of what squad action says
 	//POSSIBLY USE SOME SORT OF LEARNING. TAKE THE ACTION FROM A Q-MAP
 	
-	return m_squadAction;
+	//return m_squadAction;
+	return (UnitAction)0;
 }
 
 
@@ -104,7 +120,13 @@ void UnitEntity::applyCurrentUnitAction()
 
 	switch(m_unitAction)
 	{
-	case ATTACK:
+		case SQUAD_ACTION:
+		{
+			applySquadActionToUnit();
+		}
+		break;
+
+		case UNIT_ATTACK:
 		{
 			attackClosestEnemyUnit();
 			//{
@@ -135,36 +157,32 @@ void UnitEntity::applyCurrentUnitAction()
 		}
 		break;
 
-	case HOLD:
+	case UNIT_HOLD:
+	{
+		holdPosition();
+
+	}
+	break;
+
+	case UNIT_FLEE:
+	{
+		//TODO - set a proper fleeing point
+		Position fleeingPoint = Position(0, 0);
+		if(m_lastActionTilePos == Position(-1, -1) || m_lastActionTilePos != fleeingPoint)
 		{
-			holdPosition();
-
+			getUnit()->move(0, 0);
+			m_lastActionTilePos = fleeingPoint;
+			m_frameCount = 0;
 		}
-		break;
+	}
+	break;
 
-		//case FLEE:
-		//{
-		//	//TODO - set a proper fleeing point
-		//	Position fleeingPoint = Position(0, 0);
-		//	if(squad->m_lastActionTilePos == Position(-1, -1) || squad->m_lastActionTilePos != fleeingPoint)
-		//	{
-		//		u->move(0, 0);
-		//		squad->m_lastActionTilePos = fleeingPoint;
-		//	}
-		//}
-		//break;
-
-	case ATTACK_SURROUND:
-		{
-			attackSurround();
-		}
-		break;
 
 	default:
-		{
+	{
 
-		}
-		break;
+	}
+	break;
 	}
 }
 
@@ -259,10 +277,18 @@ void UnitEntity::setIsEnemyUnit(bool yes)
 //Sort of like let the actions already issued have a consequence before sending a new one.
 bool UnitEntity::checkCanIssueNextAction()
 {
-	if(m_unitAction == ATTACK)
+	if(m_unitAction == UNIT_ATTACK
+		|| (m_unitAction == SQUAD_ACTION && m_squadAction == ATTACK))
 	{
 		//Remove info from old FLEE or HOLD actions
+		if(m_frameCount <= 5)
+		{
+			m_canIssueNextAction = false;
+			return false;
+		}
+
 		m_frameCount = 0;
+
 		m_lastActionTilePos = Position(-1, -1);
 
 		SquadEntity* enemySquad = m_squad->getEnemySquad();
@@ -270,7 +296,7 @@ bool UnitEntity::checkCanIssueNextAction()
 		if(enemySquad->getNumUnits() <= 0)
 		{
 			//No enemy units on sight, can send new action
-			m_unitAction = COUNT;
+			//m_unitAction = UNIT_COUNT;
 			m_canIssueNextAction = true;
 		}
 		else
@@ -288,30 +314,31 @@ bool UnitEntity::checkCanIssueNextAction()
 
 			if(isUnitAttacking)
 			{
-				m_unitAction = COUNT;
+				//m_unitAction = UNIT_COUNT;
 				m_canIssueNextAction = true;
 			}
 		}
 	}
-	else if(m_unitAction == ATTACK_SURROUND)
+	else if(m_unitAction == SQUAD_ACTION && m_squadAction == ATTACK_SURROUND)
 	{
 		//TODO 
 
 		if(m_frameCount > 5)
 		{
-			m_unitAction = COUNT;
+			//m_unitAction = UNIT_COUNT;
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
 		}
 	}
-	else if(m_unitAction == HOLD || m_unitAction == FLEE)
+	else if(m_unitAction == UNIT_HOLD || m_unitAction == UNIT_FLEE
+		|| (m_unitAction == SQUAD_ACTION && m_squadAction == HOLD))
 	{
 		//Remove info from old ATTACK action
 		m_lastUnitAttacked = NULL;
 
 		if(m_frameCount > 5)
 		{
-			m_unitAction = COUNT;
+			//m_unitAction = UNIT_COUNT;
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
 		}
@@ -348,7 +375,7 @@ UnitState UnitEntity::getLastUnitState() const
 }
 
 
-Action UnitEntity::getLastUnitAction() const
+UnitAction UnitEntity::getLastUnitAction() const
 {
 	return m_lastUnitAction;
 }
@@ -448,12 +475,12 @@ void UnitEntity::setEnemyHitPointsInUnitState(UnitState& state) const
 
 void UnitEntity::setLastUnitActionInUnitState(UnitState& state) const
 {
-	state.m_unitAction = m_unitAction;
+	state.m_lastUnitAction = m_lastUnitAction;
 }
 
 void UnitEntity::setLastSquadActionInUnitState(UnitState& state) const
 {
-	state.m_squadAction = m_squadAction;
+	state.m_lastSquadAction = m_lastSquadAction;
 }
 
 bool UnitEntity::canIssueNextAction() const
@@ -461,7 +488,7 @@ bool UnitEntity::canIssueNextAction() const
 	return m_canIssueNextAction;
 }
 
-Action UnitEntity::getCurrentUnitAction() const
+UnitAction UnitEntity::getCurrentUnitAction() const
 {
 	return m_unitAction;
 }
@@ -471,7 +498,7 @@ Action UnitEntity::getCurrentSquadAction() const
 	return m_squadAction;
 }
 
-void UnitEntity::setLastUnitAction(Action action)
+void UnitEntity::setLastUnitAction(UnitAction action)
 {
 	m_lastUnitAction = action;
 }
@@ -484,4 +511,48 @@ void UnitEntity::setLastSquadAction(Action action)
 void UnitEntity::setCanIssueNextAction(bool yes)
 {
 	m_canIssueNextAction = yes;
+}
+
+void UnitEntity::setLastUnitState(UnitState stateNew)
+{
+	m_lastUnitState = stateNew;
+}
+
+void UnitEntity::setCurrentUnitToAttack(BWAPI::Unit enemyUnit)
+{
+	m_currentUnitAttacked = enemyUnit;
+}
+
+void UnitEntity::applySquadActionToUnit()
+{
+	switch(m_squadAction)
+	{
+		case ATTACK:
+		{
+			Unit unitToAttack = getSquad()->getUnitToAttack(this);
+			if(unitToAttack != m_lastUnitAttacked)
+			{
+				getUnit()->attack(unitToAttack);
+				m_lastUnitAttacked = unitToAttack;
+			}
+		}
+		break;
+
+		case ATTACK_SURROUND:
+		{
+			Position posToMove = getSquad()->getActionTilePosForSurround(this);
+			if(posToMove != m_lastActionTilePos)
+			{
+				getUnit()->move(posToMove);
+				m_lastActionTilePos = posToMove;
+			}
+		}
+		break;
+
+		case HOLD:
+		{
+			getUnit()->holdPosition();
+		}
+		break;
+	}
 }

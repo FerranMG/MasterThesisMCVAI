@@ -346,74 +346,86 @@ float SquadEntity::getDispersionSqDist() const
 //Check if, given the last action that was issued, a new one can be processed
 //This is in order not to send too many actions in a short interval of time.
 //Sort of like let the actions already issued have a consequence before sending a new one.
-void SquadEntity::checkCanIssueNextAction()
+bool SquadEntity::checkCanIssueNextAction()
 {
-	//SquadEntity* squad = SquadManager::getInstance()->m_squad;
-	if(m_numUnits > 0)
+	if(m_frameCount > 5)
 	{
-		if(m_currentAction == ATTACK)
-		{
-			//Remove info from old FLEE or HOLD actions
-			m_frameCount = 0;
-			m_lastActionTilePos = Position(-1, -1);
-
-			if(m_enemySquad->getNumUnits() <= 0)
-			{
-				//No enemy units on sight, can send new action
-				m_currentAction = COUNT;
-				m_canIssueNextAction = true;
-			}
-			else
-			{
-				//When some unit has started to attack, then we can send a new action
-				bool isAnyUnitAttacking = false;
-				for(Unitset::iterator u = m_squadUnits.begin(); u != m_squadUnits.end(); ++u)
-				{
-					if(u->isAttacking())
-					{
-						isAnyUnitAttacking = true;
-						break;
-					}
-				}
-
-				if(isAnyUnitAttacking)
-				{
-					m_currentAction = COUNT;
-					m_canIssueNextAction = true;
-				}
-			}
-		}
-		else if(m_currentAction == ATTACK_SURROUND)
-		{
-			Position enemyPos = m_enemySquad->getAvgPosition();
-
-			if(Common::computeSqDistBetweenPoints(m_posToSurround, enemyPos) > 50 * 50)
-			{
-				m_currentAction = COUNT;
-				m_canIssueNextAction = true;
-			}
-			else
-			{
-				m_canIssueNextAction = false;
-			}
-		}
-		else if(m_currentAction == HOLD || m_currentAction == FLEE)
-		{
-			//Remove info from old ATTACK action
-			m_lastUnitAttacked = NULL;
-
-			if(m_frameCount > 5)
-			{
-				m_currentAction = COUNT;
-				m_canIssueNextAction = true;
-				m_frameCount = 0;
-			}
-		}
+		m_canIssueNextAction = true;
+		m_frameCount = 0;
 	}
 	else
 	{
-		m_canIssueNextAction = true;
+		m_canIssueNextAction = false;
 	}
+
+	return m_canIssueNextAction;
+
+	////SquadEntity* squad = SquadManager::getInstance()->m_squad;
+	//if(m_numUnits > 0)
+	//{
+	//	if(m_currentAction == ATTACK)
+	//	{
+	//		//Remove info from old FLEE or HOLD actions
+	//		m_frameCount = 0;
+	//		m_lastActionTilePos = Position(-1, -1);
+
+	//		if(m_enemySquad->getNumUnits() <= 0)
+	//		{
+	//			//No enemy units on sight, can send new action
+	//			m_currentAction = COUNT;
+	//			m_canIssueNextAction = true;
+	//		}
+	//		else
+	//		{
+	//			//When some unit has started to attack, then we can send a new action
+	//			bool isAnyUnitAttacking = false;
+	//			for(Unitset::iterator u = m_squadUnits.begin(); u != m_squadUnits.end(); ++u)
+	//			{
+	//				if(u->isAttacking())
+	//				{
+	//					isAnyUnitAttacking = true;
+	//					break;
+	//				}
+	//			}
+
+	//			if(isAnyUnitAttacking)
+	//			{
+	//				m_currentAction = COUNT;
+	//				m_canIssueNextAction = true;
+	//			}
+	//		}
+	//	}
+	//	else if(m_currentAction == ATTACK_SURROUND)
+	//	{
+	//		Position enemyPos = m_enemySquad->getAvgPosition();
+
+	//		if(Common::computeSqDistBetweenPoints(m_posToSurround, enemyPos) > 50 * 50)
+	//		{
+	//			m_currentAction = COUNT;
+	//			m_canIssueNextAction = true;
+	//		}
+	//		else
+	//		{
+	//			m_canIssueNextAction = false;
+	//		}
+	//	}
+	//	else if(m_currentAction == HOLD)
+	//	{
+	//		//Remove info from old ATTACK action
+	//		m_lastUnitAttacked = NULL;
+
+	//		if(m_frameCount > 5)
+	//		{
+	//			m_currentAction = COUNT;
+	//			m_canIssueNextAction = true;
+	//			m_frameCount = 0;
+	//		}
+	//	}
+	//}
+	//else
+	//{
+	//	m_canIssueNextAction = true;
+	//}
 }
 
 void SquadEntity::attackClosestEnemyUnit()
@@ -441,43 +453,31 @@ void SquadEntity::attackClosestEnemyUnit()
 
 	for(Unitset::iterator u = m_squadUnits.begin(); u != m_squadUnits.end(); ++u)
 	{
-		if(!performBasicChecks(u))
-		{
-			break;
-		}
+		m_lastUnitAttacked = enemyUnits[unitIndexToAttack];
 
-		//Don't send an attack command twice in a row over the same unit
-		bool attackFrame = u->isAttackFrame();
-		bool startingAttack = u->isStartingAttack();
-		bool attacking = u->isAttacking();
 
-		//if(m_issuingNewAction && unitIndex != 0 || unitIndex == 0)
-		{
-			if(m_lastUnitAttacked == NULL || m_lastUnitAttacked != enemyUnits[unitIndexToAttack])
-			{
-				if(!u->isAttackFrame() && !u->isStartingAttack() && !u->isAttacking())
-				{
-					u->attack(enemyUnits[unitIndexToAttack]);
-					m_lastUnitAttacked = enemyUnits[unitIndexToAttack];
-
-					//if(unitIndex == 0)
-					//{
-					//	m_issuingNewAction = true; //UNCOMMENT THIS TO MAKE THE GAME CRASH WHEN RESTARTING
-					//}
-				}
-			}
-		}
-
-		//SquadManager::getInstance()->m_squad->getNumUnits();
-		//if(unitIndex == SquadManager::getInstance()->m_squad->getNumUnits())
+		//if(!performBasicChecks(u))
 		//{
-		//	m_issuingNewAction = false;
+		//	break;
 		//}
 
+		////Don't send an attack command twice in a row over the same unit
+		//bool attackFrame = u->isAttackFrame();
+		//bool startingAttack = u->isStartingAttack();
+		//bool attacking = u->isAttacking();
 
+		////if(m_issuingNewAction && unitIndex != 0 || unitIndex == 0)
+		//{
+		//	if(m_lastUnitAttacked == NULL || m_lastUnitAttacked != enemyUnits[unitIndexToAttack])
+		//	{
+		//		if(!u->isAttackFrame() && !u->isStartingAttack() && !u->isAttacking())
+		//		{
+		//			//u->attack(enemyUnits[unitIndexToAttack]);
 
-
-		//u->attack(enemyUnits[unitIndexToAttack], true);
+		//			m_lastUnitAttacked = enemyUnits[unitIndexToAttack];
+		//		}
+		//	}
+		//}
 	}
 
 }
@@ -489,52 +489,14 @@ void SquadEntity::applyCurrentAction()
 		case ATTACK:
 		{
 			attackClosestEnemyUnit();
-			//{
-			//	//TODO
-				//int mapWidth = Broodwar->mapWidth() * TILE_SIZE;
-				//int mapHeight = Broodwar->mapHeight() * TILE_SIZE;
-			//	//if(QLearningMgr::getInstance()->getCurrentAction() == COUNT)
-			//	{
-			//		if(x < mapWidth >> 1 && y < mapHeight >> 1) //TOP LEFT
-			//		{
-			//			u->move(Position(x + 10, y));
-			//		}
-			//		else if(x > mapWidth >> 1 && y < mapHeight >> 1) //TOP RIGHT
-			//		{
-			//			u->move(Position(x, y + 10));
-			//		}
-			//		else if(x > mapWidth>> 1 && y > mapHeight >> 1) //BOTTOM RIGHT
-			//		{
-			//			u->move(Position(x - 10, y));
-			//		}
-			//		else //BOTTOM LEFT
-			//		{
-			//			u->move(Position(x, y - 10));
-			//		}
-			//	}
-			//}
-
 		}
 		break;
 
 		case HOLD:
-			{
-				holdPositions();
-
-			}
-			break;
-
-		//case FLEE:
-		//{
-		//	//TODO - set a proper fleeing point
-		//	Position fleeingPoint = Position(0, 0);
-		//	if(squad->m_lastActionTilePos == Position(-1, -1) || squad->m_lastActionTilePos != fleeingPoint)
-		//	{
-		//		u->move(0, 0);
-		//		squad->m_lastActionTilePos = fleeingPoint;
-		//	}
-		//}
-		//break;
+		{
+			holdPositions();
+		}
+		break;
 
 		case ATTACK_SURROUND:
 		{
@@ -604,22 +566,22 @@ void SquadEntity::holdPositions()
 void SquadEntity::attackSurround()
 {
 	std::vector<Position> surroundPositions;
-	surroundPositions = calculateSurroundPositions();
+	m_surroundPositions = calculateSurroundPositions();
 
-	if(surroundPositions.size() > 0)
-	{
-		int index = 0;
-		for(Unitset::iterator u = m_squadUnits.begin(); u != m_squadUnits.end(); ++u, ++index)
-		{
-			if(!performBasicChecks(u))
-			{
-				return;
-			}
+	//if(surroundPositions.size() > 0)
+	//{
+	//	int index = 0;
+	//	for(Unitset::iterator u = m_squadUnits.begin(); u != m_squadUnits.end(); ++u, ++index)
+	//	{
+	//		if(!performBasicChecks(u))
+	//		{
+	//			return;
+	//		}
 
-			u->move(surroundPositions.at(index));
-			//u->attack(surroundPositions.at(index));
-		}
-	}
+	//		u->move(surroundPositions.at(index));
+	//		//u->attack(surroundPositions.at(index));
+	//	}
+	//}
 }
 
 void SquadEntity::setHealthInState(State& state)
@@ -743,4 +705,42 @@ bool SquadEntity::getIsEnemySquad() const
 void SquadEntity::setIsEnemySquad(bool yes)
 {
 	m_isEnemySquad = yes;
+}
+
+BWAPI::Unit SquadEntity::getUnitToAttack(UnitEntity* unitEntity)
+{
+	assert(unitEntity->getCurrentSquadAction() == ATTACK);
+	return m_lastUnitAttacked;
+}
+
+BWAPI::Position SquadEntity::getActionTilePosForSurround(UnitEntity* unitEntity)
+{
+	assert(unitEntity->getCurrentSquadAction() == ATTACK_SURROUND);
+	Position unitPos = unitEntity->getUnit()->getPosition();
+	int minDist = std::numeric_limits<int>::max();
+	Position retPos = unitPos;
+	vector<Position>::iterator removeIt;
+	for(vector<Position>::iterator pos = m_surroundPositions.begin(); pos != m_surroundPositions.end(); ++pos)
+	{
+		int dist = 0;
+		dist = Common::computeSqDistBetweenPoints(*pos, unitPos);
+		if(dist < minDist)
+		{
+			dist = minDist;
+			retPos = *pos;
+			removeIt = pos;
+		}
+	}
+
+	if(retPos != unitPos)
+	{
+		m_surroundPositions.erase(removeIt);
+	}
+
+	return retPos;
+}
+
+bool SquadEntity::canIssueNextAction()
+{
+	return m_canIssueNextAction;
 }

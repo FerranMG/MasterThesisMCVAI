@@ -38,8 +38,8 @@ UnitState::UnitState()
 	m_distToClosestEnemyGroup = NA;
 	m_hitPoints = 0;
 	m_enemyHitPoints = 0;
-	m_unitAction = COUNT;
-	m_squadAction = COUNT;
+	m_lastUnitAction = UNIT_COUNT;
+	m_lastSquadAction = COUNT;
 }
 
 

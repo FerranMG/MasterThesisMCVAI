@@ -15,29 +15,32 @@ public:
 	SquadEntity* getSquad() const;
 
 	void setSquadAction(Action action);
-	void setUnitAction(Action action);
+	void setUnitAction(UnitAction action);
 
 	BWAPI::Unitset::iterator getUnitIterator() const;
 	BWAPI::Unit getUnit() const {return m_unit;}
-	Action calculateUnitAction();
+	UnitAction calculateUnitAction();
 	void   applyCurrentUnitAction();
 
 	bool   getIsEnemyUnit() const;
 	void   setIsEnemyUnit(bool yes);
 
 	UnitState		getCurrentUnitState() const;
-	Action			getCurrentUnitAction() const;
+	UnitAction		getCurrentUnitAction() const;
 	Action			getCurrentSquadAction() const;
 	UnitState		getLastUnitState() const;
-	Action			getLastUnitAction() const;
+	UnitAction		getLastUnitAction() const;
 	Action			getLastSquadAction() const;
 
-	void setLastUnitAction(Action action);
+	void setLastUnitAction(UnitAction action);
 	void setLastSquadAction(Action action);
 
 	bool canIssueNextAction() const;
 	bool checkCanIssueNextAction();
 	void setCanIssueNextAction(bool yes);
+	void setLastUnitState(UnitState stateNew);
+
+	void setCurrentUnitToAttack(BWAPI::Unit enemyUnit);
 
 private:
 	void attackClosestEnemyUnit();
@@ -53,13 +56,18 @@ private:
 	void setEnemyHitPointsInUnitState(UnitState& state) const;
 	void setLastUnitActionInUnitState(UnitState& state) const;
 	void setLastSquadActionInUnitState(UnitState& state) const;
+	void applySquadActionToUnit();
 	BWAPI::Unitset::iterator m_unitIterator;
 	BWAPI::Unit m_unit;
 	BWAPI::Unit m_directEnemy;
 
 	SquadEntity* m_squad;
 	Action m_squadAction;
-	Action m_unitAction;
+	UnitAction m_unitAction;
+
+	BWAPI::Position m_currentActionTilePos;
+	BWAPI::Unit		m_currentUnitAttacked;
+
 	BWAPI::Position m_lastActionTilePos;
 	BWAPI::Unit		m_lastUnitAttacked;
 
@@ -70,7 +78,7 @@ private:
 	int m_frameCount;
 
 	UnitState	m_lastUnitState;
-	Action		m_lastUnitAction;
+	UnitAction		m_lastUnitAction;
 	Action		m_lastSquadAction;
 
 

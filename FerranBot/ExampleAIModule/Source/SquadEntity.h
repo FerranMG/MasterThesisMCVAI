@@ -50,7 +50,7 @@ public:
 	float							getDispersionSqDist() const;
 	std::vector<BWAPI::Position>	calculateSurroundPositions();
 	void							calculateUnitsDispersion();
-	void							checkCanIssueNextAction();
+	bool							checkCanIssueNextAction();
 
 	void applyCurrentAction();
 	void attackClosestEnemyUnit();
@@ -79,6 +79,9 @@ public:
 	bool   getIsEnemySquad() const;
 	void   setIsEnemySquad(bool yes);
 
+	BWAPI::Unit getUnitToAttack(UnitEntity* unitEntity);
+	BWAPI::Position getActionTilePosForSurround(UnitEntity* unitEntity);
+	bool canIssueNextAction();
 	BWAPI::Position m_lastActionTilePos;
 	BWAPI::Unit		m_lastUnitAttacked;
 
@@ -104,6 +107,6 @@ private:
 	int				m_frameCount;
 
 	bool			m_isEnemySquad;
-
+	std::vector<BWAPI::Position> m_surroundPositions;
 
 };

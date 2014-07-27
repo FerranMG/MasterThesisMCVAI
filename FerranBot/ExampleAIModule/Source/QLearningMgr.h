@@ -34,10 +34,10 @@ typedef struct SApair
 typedef struct USApair
 {
 	USApair();
-	USApair(UnitState state, Action action);
+	USApair(UnitState state, UnitAction action);
 
 	UnitState state;
-	Action action;
+	UnitAction action;
 
 	bool operator<( const USApair& n) const
 	{
@@ -134,7 +134,7 @@ public:
 	~QLearningMgr();
 
 	Action updateSquadQ(State lastState, Action lastAction, State stateNew);
-	Action updateUnitQ(UnitState lastState, Action lastUnitAction, Action lastSquadAction, UnitState stateNew);
+	UnitAction updateUnitQ(UnitState lastState, UnitAction lastUnitAction, Action lastSquadAction, UnitState stateNew);
 	float getAlpha(SApair sapair);
 	float getReward(SApair sapair, State stateNew);
 	float getOptimalFutureValue(State state, Action& outNewAction);
@@ -170,8 +170,10 @@ private:
 	void writeQMapBinary();
 	void writeQCountBinary();
 	void writeQVars();
-	float getOptimalFutureValueForUnit(UnitState state, Action& outNewAction);
+	float getOptimalFutureValueForUnit(UnitState state, UnitAction& outNewAction);
 	float getAlphaForUnit(USApair usapair);
 	float getRewardForUnit(USApair usapair, UnitState stateNew);
 	float RunAwayForUnit(const UnitState& stateLast, const UnitState& stateNew);
+	std::string TranslateGroupToWord(Group group);
+	std::string TranslateActionToWord(int action);
 };
