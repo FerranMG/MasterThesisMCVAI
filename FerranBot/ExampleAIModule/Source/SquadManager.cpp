@@ -76,7 +76,7 @@ void SquadManager::update()
 			{
 				Action action = QLearningMgr::getInstance()->updateSquadQ(squad->getLastState(), squad->getLastAction(), stateNew);
 
-				Broodwar->sendText("Last State H %d DPS %d dist %d Action %d", squad->getLastState().m_avgHealthGroup, squad->getLastState().m_avgDpsXHealthGroup, squad->getLastState().m_distToClosestEnemyGroup, squad->getLastAction());
+				Broodwar->sendText("Last State H %d DPS %d dist %d Action %d", squad->getLastState().m_avgHealthGroup, squad->getLastState().m_avgDpsGroup, squad->getLastState().m_distToClosestEnemyGroup, squad->getLastAction());
 				assert(action >= ATTACK && action <= COUNT);
 
 				squad->setLastAction(squad->getCurrentAction());
@@ -107,27 +107,6 @@ void SquadManager::addEnemySquad(SquadEntity* squadEntity)
 {
 	m_enemySquads->push_back(squadEntity);
 	squadEntity->setIsEnemySquad(true);
-}
-
-
-void SquadManager::removeSquad(SquadEntity* squadEntity)
-{
-	//TODO - veure com funciona l'erase de std::vector
-	//for(size_t squadIdx = 0; squadIdx < m_squads->size(); ++squadIdx)
-	//{
-	//	if(m_squads->at(squadIdx) == squadEntity)
-	//	{
-	//		m_squads->erase(squadIdx);
-	//		return;
-	//	}
-	//}
-}
-
-
-void SquadManager::removeEnemySquad(SquadEntity* squadEntity)
-{
-	//TODO - veure com funciona l'erase de std::vector
-
 }
 
 

@@ -103,7 +103,7 @@ State SquadEntity::getCurrentState()
 	//values to the State variable.
 	assert(m_enemySquad);
 	setHealthInState(state);
-	setDpsXHealthInState(state);
+ 	setDpsInState(state);
 	setDistanceInState(state);
 	setHitPointsInState(state);
 	setEnemyHitPointsInState(state);
@@ -113,9 +113,9 @@ State SquadEntity::getCurrentState()
 }
 
 
-void SquadEntity::setAvgDpsXHealth(int num)
+void SquadEntity::setAvgDps(int num)
 {
-	m_avgDpsXHealth = num;
+	m_avgDps = num;
 }
 
 void SquadEntity::setAvgHealth(int health)
@@ -162,7 +162,7 @@ void SquadEntity::calculateAvgDps()
 
 	if(m_numUnits > 0)
 	{
-		setAvgDpsXHealth((int)totalDps/m_numUnits);
+		setAvgDps((int)totalDps/m_numUnits);
 	}
 }
 
@@ -236,9 +236,9 @@ void SquadEntity::assignCurrentEnemySquad()
 	m_enemySquad = SquadManager::getInstance()->getEnemySquads()->at(0);
 }
 
-int SquadEntity::getAvgDpsXHealth()
+int SquadEntity::getAvgDps()
 {
-	return m_avgDpsXHealth;
+	return m_avgDps;
 }
 
 int SquadEntity::getAvgHealth()
@@ -277,7 +277,7 @@ bool SquadEntity::checkNoHitPoints(const BWAPI::Unit unit)
 	return unit->getHitPoints() <= 0; 
 }
 
-std::vector<Position> SquadEntity::calculateSurroundPositions()
+std::vector<Position> SquadEntity::calculateSurroundPositions(bool forceCalculate)
 {
 	std::vector<Position> retVect;
 
@@ -287,7 +287,16 @@ std::vector<Position> SquadEntity::calculateSurroundPositions()
 		return retVect;
 	}
 
-	m_posToSurround = m_enemySquad->getAvgPosition();
+	Position oldSurroundPos = m_posToSurround;
+	Position newSurroundPos = m_enemySquad->getAvgPosition();
+	if(Common::computeSqDistBetweenPoints(oldSurroundPos, newSurroundPos) > 2500 || forceCalculate)
+	{
+		m_posToSurround = newSurroundPos;
+	}
+	else
+	{
+		return retVect;
+	}
 
 	
 	float radius = sqrt(std::max(m_enemySquad->getDispersionSqDist(), 80.0f * 80.0f));
@@ -314,14 +323,6 @@ void SquadEntity::calculateUnitsDispersion()
 {
 	float maxSqDistance = 0.0f;
 
-	//int posX = 0;
-	//int posY = 0;
-	//for(Unitset::iterator it = m_squadUnits.begin(); it < m_squadUnits.end(); it++)
-	//{
-	//	posX += it->getPosition().x;
-	//	posY += it->getPosition().y;
-	//}
-
 	for(Unitset::iterator u = m_squadUnits.begin(); u != m_squadUnits.end(); ++u)
 	{
 		Position pos1 = m_enemySquad->getAvgPosition();
@@ -332,7 +333,6 @@ void SquadEntity::calculateUnitsDispersion()
 			maxSqDistance = sqDist;
 		}
 	}
-
 
 	m_dispersionSqDist = maxSqDistance;
 }
@@ -566,7 +566,7 @@ void SquadEntity::holdPositions()
 void SquadEntity::attackSurround()
 {
 	std::vector<Position> surroundPositions;
-	m_surroundPositions = calculateSurroundPositions();
+	m_surroundPositions = calculateSurroundPositions(false);
 
 	//if(surroundPositions.size() > 0)
 	//{
@@ -586,16 +586,16 @@ void SquadEntity::attackSurround()
 
 void SquadEntity::setHealthInState(State& state)
 {
-	//TODO - revise this
 	if(m_numUnits <= 0)
 	{
 		state.setAvgHealth(NA);
 	}
-	else if(m_avgHealth < m_enemySquad->getAvgHealth())
+	else if(m_avgHealth < m_enemySquad->getAvgHealth() * 0.8)
 	{
 		state.setAvgHealth(LOW);
 	}
-	else if(m_avgHealth - m_enemySquad->getAvgHealth() >= 0 && m_avgHealth - m_enemySquad->getAvgHealth() < 15 * m_enemySquad->getNumUnits()) //TODO - REVISE THIS
+	else if(m_avgHealth >= m_enemySquad->getAvgHealth() * 0.8 && m_avgHealth < m_enemySquad->getAvgHealth() * 1.2)
+	//else if(m_avgHealth - m_enemySquad->getAvgHealth() >= 0 && m_avgHealth - m_enemySquad->getAvgHealth() < 15 * m_enemySquad->getNumUnits()) //TODO - REVISE THIS
 	{
 		state.setAvgHealth(MID);
 	}
@@ -605,23 +605,25 @@ void SquadEntity::setHealthInState(State& state)
 	}
 }
 
-void SquadEntity::setDpsXHealthInState(State& state)
+void SquadEntity::setDpsInState(State& state)
 {
 	if(m_numUnits <= 0)
 	{
-		state.setAvgDpsXHealth(NA);
+		state.setAvgDps(NA);
 	}
-	else if(m_avgDpsXHealth < m_enemySquad->getAvgDpsXHealth())
+	//else if(m_avgDps < m_enemySquad->getAvgDps())
+	else if(m_avgDps < m_enemySquad->getAvgDps() * 0.8)
 	{
-		state.setAvgDpsXHealth(LOW);
+		state.setAvgDps(LOW);
 	}
-	else if(m_avgDpsXHealth - m_enemySquad->getAvgDpsXHealth() >= 0 && m_avgDpsXHealth - m_enemySquad->getAvgDpsXHealth() < 15 * m_enemySquad->getNumUnits()) //TODO - REVISE THIS
+	else if(m_avgDps >= m_enemySquad->getAvgDps() * 0.8 && m_avgDps < m_enemySquad->getAvgDps() * 1.2)
+	//else if(m_avgDps - m_enemySquad->getAvgDps() >= 0 && m_avgDps - m_enemySquad->getAvgDps() < 15 * m_enemySquad->getNumUnits()) //TODO - REVISE THIS
 	{
-		state.setAvgDpsXHealth(MID);
+		state.setAvgDps(MID);
 	}
 	else
 	{
-		state.setAvgDpsXHealth(HIGH);
+		state.setAvgDps(HIGH);
 	}
 }
 
@@ -713,9 +715,16 @@ BWAPI::Unit SquadEntity::getUnitToAttack(UnitEntity* unitEntity)
 	return m_lastUnitAttacked;
 }
 
-BWAPI::Position SquadEntity::getActionTilePosForSurround(UnitEntity* unitEntity)
+BWAPI::Position SquadEntity::calculateActionTilePosForSurround(UnitEntity* unitEntity)
 {
+
 	assert(unitEntity->getCurrentSquadAction() == ATTACK_SURROUND);
+	
+	if(m_surroundPositions.empty())
+	{
+		calculateSurroundPositions(true);
+	}
+
 	Position unitPos = unitEntity->getUnit()->getPosition();
 	int minDist = std::numeric_limits<int>::max();
 	Position retPos = unitPos;
@@ -743,4 +752,9 @@ BWAPI::Position SquadEntity::getActionTilePosForSurround(UnitEntity* unitEntity)
 bool SquadEntity::canIssueNextAction()
 {
 	return m_canIssueNextAction;
+}
+
+bool SquadEntity::hasNewSurroundPositions() const
+{
+	return !m_surroundPositions.empty();
 }

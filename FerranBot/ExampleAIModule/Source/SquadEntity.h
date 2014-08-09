@@ -31,7 +31,7 @@ public:
 	void removeDeadUnits();
 	static bool checkNoHitPoints(const BWAPI::Unit unit);
 
-	void setAvgDpsXHealth(int num);
+	void setAvgDps(int num);
 	void setAvgHealth(int health);
 	void setSqDistToClosestEnemyGroup(int dist);
 	void setAvgPosition(BWAPI::Position pos);
@@ -42,13 +42,13 @@ public:
 
 	SquadEntity* getEnemySquad() const {return m_enemySquad;}
 
-	int								getAvgDpsXHealth();
+	int								getAvgDps();
 	int								getAvgHealth();
 	int								getSqDistToClosestEnemyGroup();
 	BWAPI::Position					getAvgPosition();
 	int								getNumUnits();
 	float							getDispersionSqDist() const;
-	std::vector<BWAPI::Position>	calculateSurroundPositions();
+	std::vector<BWAPI::Position>	calculateSurroundPositions(bool forceCalculate);
 	void							calculateUnitsDispersion();
 	bool							checkCanIssueNextAction();
 
@@ -58,7 +58,7 @@ public:
 	void holdPositions();
 	void attackSurround();
 	void setHealthInState(State& state);
-	void setDpsXHealthInState(State& state);
+	void setDpsInState(State& state);
 	void setDistanceInState(State& state);
 	void setHitPointsInState(State& state);
 	void setEnemyHitPointsInState(State& state);
@@ -80,7 +80,8 @@ public:
 	void   setIsEnemySquad(bool yes);
 
 	BWAPI::Unit getUnitToAttack(UnitEntity* unitEntity);
-	BWAPI::Position getActionTilePosForSurround(UnitEntity* unitEntity);
+	BWAPI::Position calculateActionTilePosForSurround(UnitEntity* unitEntity);
+	bool hasNewSurroundPositions() const;
 	bool canIssueNextAction();
 	BWAPI::Position m_lastActionTilePos;
 	BWAPI::Unit		m_lastUnitAttacked;
@@ -89,7 +90,7 @@ public:
 private:
 	BWAPI::Unitset	m_squadUnits;
 
-	int				m_avgDpsXHealth;
+	int				m_avgDps;
 	int				m_avgHealth;
 	int				m_sqDistToClosestEnemyGroup;
 	BWAPI::Position m_avgPos;

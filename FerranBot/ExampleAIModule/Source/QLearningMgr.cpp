@@ -46,6 +46,9 @@ QLearningMgr::QLearningMgr()
 	q_countUnit = new std::map<USApair, int, unitCompare>;
 	m_forceReward = 0.0f;
 	m_forceUnitReward = 0.0f;
+
+	m_numGamesPlayed = 0;
+	m_numGamesWon = 0;
 }
 
 
@@ -94,7 +97,7 @@ Action QLearningMgr::updateSquadQ(State lastState, Action lastAction, State stat
 	static Group b = LOW;
 	static Group c = LOW;
 
-	if( lastState.m_avgDpsXHealthGroup == a && lastState.m_avgHealthGroup == b &&lastState.m_distToClosestEnemyGroup == c)
+	if( lastState.m_avgDpsGroup == a && lastState.m_avgHealthGroup == b &&lastState.m_distToClosestEnemyGroup == c)
 	{
 		int a = 0;
 	}
@@ -154,7 +157,7 @@ float QLearningMgr::getReward(SApair sapair, State stateNew)
 	State stateLast = sapair.state;
 	if(stateLast.m_avgHealthGroup < stateNew.m_avgHealthGroup) //Enemy has less life than before
 	{
-		if(stateLast.m_avgDpsXHealthGroup < stateNew.m_avgDpsXHealthGroup) //Enemy has less DPS than before
+		if(stateLast.m_avgDpsGroup < stateNew.m_avgDpsGroup) //Enemy has less DPS than before
 		{
 			reward += 20.0f;
 		}
@@ -165,7 +168,7 @@ float QLearningMgr::getReward(SApair sapair, State stateNew)
 	}
 	else if(stateLast.m_avgHealthGroup > stateNew.m_avgHealthGroup) //We have less life than before
 	{
-		if(stateLast.m_avgDpsXHealthGroup > stateNew.m_avgDpsXHealthGroup) //We has less DPS than before
+		if(stateLast.m_avgDpsGroup > stateNew.m_avgDpsGroup) //We has less DPS than before
 		{
 			reward -= 20.0f;
 		}
@@ -175,7 +178,7 @@ float QLearningMgr::getReward(SApair sapair, State stateNew)
 		}
 	}
 	else if(stateLast.m_avgHealthGroup			== stateNew.m_avgHealthGroup			&& stateLast.m_avgHealthGroup == LOW
-		 && stateLast.m_avgDpsXHealthGroup		== stateNew.m_avgDpsXHealthGroup		&& stateLast.m_avgDpsXHealthGroup == LOW )
+		 && stateLast.m_avgDpsGroup		== stateNew.m_avgDpsGroup		&& stateLast.m_avgDpsGroup == LOW )
 	{
 		//Low health and low dps => try to run away!
 		float rew = RunAway(stateLast, stateNew);
@@ -183,7 +186,7 @@ float QLearningMgr::getReward(SApair sapair, State stateNew)
 	}
 	else if(stateLast.m_hitPoints <= stateNew.m_hitPoints) //we are not losing life
 	{
-		if(stateLast.m_enemyHitPoints >= stateNew.m_enemyHitPoints) //enemy is losing life
+		if(stateLast.m_enemyHitPoints > stateNew.m_enemyHitPoints) //enemy is losing life
 		{
 			reward += 5.0f;
 		}
@@ -221,15 +224,12 @@ float QLearningMgr::getReward(SApair sapair, State stateNew)
 
 float QLearningMgr::getOptimalFutureValue(State state, Action& outNewAction)
 {
-	//TODO
-	
-
 	float exploreExploitRand = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) - 1;
 
 	float exploreExploitCoef = getExploreExploitCoefficient();
 	if(exploreExploitCoef > exploreExploitRand) //Exploit
 	{
-		float maxValue = std::numeric_limits<float>::lowest();//-1000000.0f;
+		float maxValue = -1000000.0f;
 		
 		bool stateFound = false;
 
@@ -263,20 +263,9 @@ float QLearningMgr::getOptimalFutureValue(State state, Action& outNewAction)
 	}
 	else //Explore
 	{
-		//float minValue = 1000000.0f;
 		float qValue = 0.0f;
 		bool stateFound = false;
 		int numTimesStateVisited = 100000;
-
-
-			//stateFound = true;
-
-			//float currentQValue = it->second;
-			//if(currentQValue < minValue)
-			//{
-			//	minValue = currentQValue;
-			//	outNewAction = (Action)act;
-			//}
 
 		for(int act = 0; act < COUNT; act++)
 		{
@@ -311,7 +300,6 @@ float QLearningMgr::getOptimalFutureValue(State state, Action& outNewAction)
 		if(stateFound)
 		{
 			return qValue;
-			//return minValue;
 		}
 		else
 		{
@@ -325,13 +313,12 @@ float QLearningMgr::getOptimalFutureValue(State state, Action& outNewAction)
 
 float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, UnitAction& outNewAction)
 {
-	//TODO
 	float exploreExploitRand = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) - 1;
 
 	float exploreExploitCoef = getExploreExploitCoefficient();
 	if(exploreExploitCoef > exploreExploitRand) //Exploit
 	{
-		float maxValue = std::numeric_limits<float>::lowest();//-1000000.0f;
+		float maxValue = -1000000.0f;
 
 		bool stateFound = false;
 
@@ -402,7 +389,6 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, UnitAction& ou
 		if(stateFound)
 		{
 			return qValue;
-			//return minValue;
 		}
 		else
 		{
@@ -565,6 +551,9 @@ void QLearningMgr::readFromStream()
 		{
 			ifs_vars.read((char*)&m_exploreExploitCoef, sizeof(float));
 			ifs_vars.read((char*)&m_totalNumStatesVisited, sizeof(int));
+
+			ifs_vars.read((char*)&m_numGamesPlayed, sizeof(int));
+			ifs_vars.read((char*)&m_numGamesWon, sizeof(int));
 		}
 	}
 
@@ -707,15 +696,19 @@ void QLearningMgr::writeQMapHumanReadable()
 	{
 		while(iter != q_map->end())
 		{
-			ofs_human_readable_qmap << "State dpsXHealth = " << TranslateGroupToWord(iter->first.state.m_avgDpsXHealthGroup) << " avgHealth = " 
+			ofs_human_readable_qmap << "State avgDps = " << TranslateGroupToWord(iter->first.state.m_avgDpsGroup) << " avgHealth = " 
 				<< TranslateGroupToWord(iter->first.state.m_avgHealthGroup) << " dist = " << TranslateGroupToWord(iter->first.state.m_distToClosestEnemyGroup) 
 				<< " action = " << TranslateActionToWord(iter->first.action);
 			ofs_human_readable_qmap << " q_value = " << iter->second;
 			ofs_human_readable_qmap << " visited = " << itercount->second << endl;
-
+			 
 			iter++;
 			itercount++;
 		}
+
+
+		ofs_human_readable_qmap << "\n\n\nNum games played = " << m_numGamesPlayed;
+		ofs_human_readable_qmap << "\nNum games won = " << m_numGamesWon;
 	}
 
 	ofs_human_readable_qmap.close();
@@ -736,7 +729,7 @@ void QLearningMgr::writeQMapHumanReadable()
 	{
 		while(iterUnitMap != q_mapUnit->end())
 		{
-			ofs_human_readable_qmapUnit << "State dpsXHealth = " << TranslateGroupToWord(iterUnitMap->first.state.m_avgDpsXHealthGroup) << " avgHealth = " 
+			ofs_human_readable_qmapUnit << "State avgDps = " << TranslateGroupToWord(iterUnitMap->first.state.m_avgDpsGroup) << " avgHealth = " 
 				<< TranslateGroupToWord(iterUnitMap->first.state.m_avgHealthGroup) << " dist = " << TranslateGroupToWord(iterUnitMap->first.state.m_distToClosestEnemyGroup) 
 				<< " action = " << TranslateActionToWord(iterUnitMap->first.action);
 			ofs_human_readable_qmapUnit << " q_value = " << iterUnitMap->second;
@@ -746,6 +739,8 @@ void QLearningMgr::writeQMapHumanReadable()
 			iterUnitCount++;
 		}
 	}
+
+
 
 	ofs_human_readable_qmapUnit.close();
 }
@@ -840,6 +835,10 @@ void QLearningMgr::writeQVars()
 	{
 		ofs_vars.write((char*)&m_exploreExploitCoef, sizeof(float));
 		ofs_vars.write((char*)&m_totalNumStatesVisited, sizeof(int));
+
+		ofs_vars.write((char*)&m_numGamesPlayed, sizeof(int));
+		ofs_vars.write((char*)&m_numGamesWon, sizeof(int));
+
 	}
 	ofs_vars.close();
 }
@@ -860,11 +859,11 @@ UnitAction QLearningMgr::updateUnitQ(UnitState lastState, UnitAction lastUnitAct
 	//}
 	//m_totalNumStatesVisited++;
 	//DEBUG
-	static Group a = LOW;
-	static Group b = LOW;
+	static Group a = MID;
+	static Group b = HIGH;
 	static Group c = LOW;
 
-	if( lastState.m_avgDpsXHealthGroup == a && lastState.m_avgHealthGroup == b &&lastState.m_distToClosestEnemyGroup == c)
+	if( lastState.m_avgDpsGroup == a && lastState.m_avgHealthGroup == b &&lastState.m_distToClosestEnemyGroup == c)
 	{
 		int a = 0;
 	}
@@ -902,89 +901,127 @@ float QLearningMgr::getAlphaForUnit(USApair usapair)
 	return 0.1f; //In stochastic environments, a constant learning rate is usually used
 }
 
+
+
 float QLearningMgr::getRewardForUnit(USApair usapair, UnitState stateNew)
 {
-	if(m_forceUnitReward != 0)
+	UnitAction lastAction = usapair.action;
+	switch(lastAction)
 	{
-		float reward = m_forceUnitReward;
-		m_forceUnitReward = 0;
-		return reward;
-	}
+		case SQUAD_ACTION:
+		{
+			return getRewardForUnitSquadAction(usapair, stateNew);
+		}
+		break;
 
-	float reward = 0.0f;
+		case UNIT_ATTACK:
+		{
+			return getRewardForUnitAttack(usapair, stateNew);
+		}
+		break;
 
-	//penalize changing action
-	if(usapair.state.m_lastUnitAction != stateNew.m_lastUnitAction || stateNew.m_lastUnitAction != SQUAD_ACTION)
-	{
-		reward -= 2.0f;
-	}
+		case UNIT_HOLD:
+		{
+			return getRewardForUnitHold(usapair, stateNew);
+		}
+		break;
 
-	UnitState stateLast = usapair.state;
-	if(stateLast.m_avgHealthGroup < stateNew.m_avgHealthGroup) //Enemy has less life than before
-	{
-		if(stateLast.m_avgDpsXHealthGroup < stateNew.m_avgDpsXHealthGroup) //Enemy has less DPS than before
+		case UNIT_FLEE:
 		{
-			reward += 20.0f;
+			return getRewardForUnitFlee(usapair, stateNew);
 		}
-		else
-		{
-			reward += 10.0f;
-		}
-	}
-	else if(stateLast.m_avgHealthGroup > stateNew.m_avgHealthGroup) //We have less life than before
-	{
-		if(stateLast.m_avgDpsXHealthGroup > stateNew.m_avgDpsXHealthGroup) //We has less DPS than before
-		{
-			reward -= 20.0f;
-		}
-		else
-		{
-			reward -= 10.0f;
-		}
-	}
-	else if(stateLast.m_avgHealthGroup			== stateNew.m_avgHealthGroup			&& stateLast.m_avgHealthGroup == LOW
-		&& stateLast.m_avgDpsXHealthGroup		== stateNew.m_avgDpsXHealthGroup		&& stateLast.m_avgDpsXHealthGroup == LOW )
-	{
-		//Low health and low dps => try to run away!
-		float rew = RunAwayForUnit(stateLast, stateNew);
-		reward += rew;
-	}
-	else if(stateLast.m_hitPoints <= stateNew.m_hitPoints) //we are not losing life
-	{
-		if(stateLast.m_enemyHitPoints >= stateNew.m_enemyHitPoints) //enemy is losing life
-		{
-			reward += 5.0f;
-		}
-		else
-		{
-			//Nothing
-		}
-	}
-	else if(stateLast.m_hitPoints > stateNew.m_hitPoints) //we are losing life
-	{
-		if(stateLast.m_enemyHitPoints >= stateNew.m_enemyHitPoints) //enemy is losing life
-		{
-			if(stateNew.m_avgHealthGroup >= MID) //we can afford to lose life
-			{
-				reward += 3.0f;
-			}
-			else
-			{
-				reward -= 3.0f;
-			}
-		}
-		else
-		{
-			//Nothing
-		}
-	}
-	else
-	{
-		//Nothing
-	}
+		break;
 
-	return reward;
+		default:
+		{
+			return 0.0f;
+		}
+	}
 }
+
+//float QLearningMgr::getRewardForUnit(USApair usapair, UnitState stateNew)
+//{
+//	if(m_forceUnitReward != 0)
+//	{
+//		float reward = m_forceUnitReward;
+//		m_forceUnitReward = 0;
+//		return reward;
+//	}
+//
+//	float reward = 0.0f;
+//
+//	//penalize changing action
+//	if(usapair.state.m_lastUnitAction != stateNew.m_lastUnitAction || stateNew.m_lastUnitAction != SQUAD_ACTION)
+//	{
+//		reward -= 2.0f;
+//	}
+//
+//	UnitState stateLast = usapair.state;
+//	if(stateLast.m_avgHealthGroup < stateNew.m_avgHealthGroup) //Enemy has less life than before
+//	{
+//		if(stateLast.m_avgDpsXHealthGroup < stateNew.m_avgDpsXHealthGroup) //Enemy has less DPS than before
+//		{
+//			reward += 20.0f;
+//		}
+//		else
+//		{
+//			reward += 10.0f;
+//		}
+//	}
+//	else if(stateLast.m_avgHealthGroup > stateNew.m_avgHealthGroup) //We have less life than before
+//	{
+//		if(stateLast.m_avgDpsXHealthGroup > stateNew.m_avgDpsXHealthGroup) //We has less DPS than before
+//		{
+//			reward -= 20.0f;
+//		}
+//		else
+//		{
+//			reward -= 10.0f;
+//		}
+//	}
+//	else if(stateLast.m_avgHealthGroup			== stateNew.m_avgHealthGroup			&& stateLast.m_avgHealthGroup == LOW
+//		&& stateLast.m_avgDpsXHealthGroup		== stateNew.m_avgDpsXHealthGroup		&& stateLast.m_avgDpsXHealthGroup == LOW )
+//	{
+//		//Low health and low dps => try to run away!
+//		float rew = RunAwayForUnit(stateLast, stateNew);
+//		reward += rew;
+//	}
+//	else if(stateLast.m_hitPoints <= stateNew.m_hitPoints) //we are not losing life
+//	{
+//		if(stateLast.m_enemyHitPoints >= stateNew.m_enemyHitPoints) //enemy is losing life
+//		{
+//			reward += 5.0f;
+//		}
+//		else
+//		{
+//			//Nothing
+//		}
+//	}
+//	else if(stateLast.m_hitPoints > stateNew.m_hitPoints) //we are losing life
+//	{
+//		if(stateLast.m_enemyHitPoints >= stateNew.m_enemyHitPoints) //enemy is losing life
+//		{
+//			if(stateNew.m_avgHealthGroup >= MID) //we can afford to lose life
+//			{
+//				reward += 3.0f;
+//			}
+//			else
+//			{
+//				reward -= 3.0f;
+//			}
+//		}
+//		else
+//		{
+//			//Nothing
+//		}
+//	}
+//	else
+//	{
+//		//Nothing
+//	}
+//
+//	return reward;
+//}
 
 string QLearningMgr::TranslateGroupToWord(Group group)
 {
@@ -1044,4 +1081,331 @@ string QLearningMgr::TranslateActionToWord(int action)
 	{
 		return "UNIT_COUNT     ";
 	}
+}
+
+
+float QLearningMgr::getRewardForUnitSquadAction(USApair usapair, UnitState stateNew) const
+{
+	float reward = 0.0f;
+
+	if(stateNew.m_avgHealthGroup == LOW)
+	{
+		reward += -10.0f; //If health is low, don't follow squad orders
+	}
+	else if(stateNew.m_distToClosestEnemyGroup == LOW)
+	{
+		reward += -3.0f; //If there's an enemy very close, disregard squad orders
+	}
+	else
+	{
+		reward += 20.0f; //Else, always follow squad orders
+	}
+
+	return reward;
+}
+
+float QLearningMgr::getRewardForUnitAttack(USApair usapair, UnitState stateNew) const
+{
+	UnitState lastState = usapair.state;
+	float reward = 0.0f;
+
+	if(lastState.m_lastUnitAction != UNIT_ATTACK) //Penalize if we've changed action
+	{
+		reward += -2.0f;
+	}
+
+	//_____________________
+
+	if(stateNew.m_avgDpsGroup == HIGH)
+	{
+		if(stateNew.m_avgHealthGroup == HIGH)
+		{
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				//0
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += 2.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				reward += 5.0f; //A close enemy and high probabilities to win
+			}
+		}
+		else if(stateNew.m_avgHealthGroup == MID)
+		{
+			//Probabilities to win are more or less high
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				reward += -2.0f; //Enforce following squad action
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += -1.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				//0
+			}
+		}
+		else if(stateNew.m_avgHealthGroup == LOW)
+		{
+			//Probabilities to win are low
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				reward += -3.0f; //Enforce following squad action
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += -4.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				reward += -5.0f;
+			}
+		}
+	}
+	else if(stateNew.m_avgDpsGroup == MID)
+	{
+		if(stateNew.m_avgHealthGroup == HIGH)
+		{
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				reward += -2.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += -1.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				reward += 1.0f;
+			}
+		}
+		else if(stateNew.m_avgHealthGroup == MID)
+		{
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				reward += -4.0f; //Enforce following squad action
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += -2.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				//0
+			}
+		}
+		else if(stateNew.m_avgHealthGroup == LOW)
+		{
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				reward += -6.0f; //Enforce following squad action
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += -5.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				reward += -4.0f;
+			}
+		}
+	}
+	else if(stateNew.m_avgDpsGroup == LOW)
+	{
+		if(stateNew.m_avgHealthGroup == HIGH)
+		{
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				reward += -4.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += -3.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				reward += -2.0f;
+			}
+		}
+		else if(stateNew.m_avgHealthGroup == MID)
+		{
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				reward += -6.0f; //Enforce following squad action
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += -4.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				reward += -2.0f;
+			}
+		}
+		else if(stateNew.m_avgHealthGroup == LOW)
+		{
+			if(stateNew.m_distToClosestEnemyGroup == HIGH)
+			{
+				reward += -8.0f; //Enforce following squad action
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == MID)
+			{
+				reward += -7.0f;
+			}
+			else if(stateNew.m_distToClosestEnemyGroup == LOW)
+			{
+				reward += -4.0f;
+			}
+		}
+	}
+
+	return reward;
+}
+
+float QLearningMgr::getRewardForUnitHold(USApair usapair, UnitState stateNew) const
+{
+	UnitState lastState = usapair.state;
+	float reward = 0.0f;
+
+	if(lastState.m_lastUnitAction != UNIT_HOLD) //Penalize if we've changed action
+	{
+		reward += -2.0f;
+	}
+
+	//_____________________
+
+	if(lastState.m_avgHealthGroup < stateNew.m_avgHealthGroup) //Life balance is worse
+	{
+		reward += -10.0f;
+	}
+	else if(lastState.m_avgHealthGroup > stateNew.m_avgHealthGroup) //Life balance is better
+	{
+		reward += 10.0f;
+	}
+
+	//_____________________
+	
+	if(lastState.m_avgDpsGroup < stateNew.m_avgDpsGroup) //AvgDps balance is worse
+	{
+		reward += -10.0f;
+	}
+	else if(lastState.m_avgDpsGroup > stateNew.m_avgDpsGroup) //AvgDps balance is better
+	{
+		reward += 10.0f;
+	}
+
+	//_____________________
+
+	if(lastState.m_distToClosestEnemyGroup > stateNew.m_distToClosestEnemyGroup) //Units are getting closer
+	{
+		if(stateNew.m_distToClosestEnemyGroup == MID)
+		{
+			if(stateNew.m_avgDpsGroup == HIGH) //If we are more much more powerful than the enemy
+			{
+				reward += 2.0f;
+			}
+			else if(stateNew.m_avgDpsGroup == MID) //If we are a bit more powerful than the enemy
+			{
+				//0
+			}
+			else if(stateNew.m_avgDpsGroup == LOW) //If we are less powerful than the enemy
+			{
+				reward += -1.0f;
+			}
+		}
+		else if(stateNew.m_distToClosestEnemyGroup == LOW)
+		{
+			if(stateNew.m_avgDpsGroup == HIGH) //If we are more much more powerful than the enemy
+			{
+				reward += 1.0f;
+			}
+			else if(stateNew.m_avgDpsGroup == MID) //If we are a bit more powerful than the enemy
+			{
+				reward += -1.0f;
+			}
+			else if(stateNew.m_avgDpsGroup == LOW) //If we are less powerful than the enemy
+			{
+				reward += -10.0f;
+			}
+		}
+	}
+
+	return reward;
+}
+
+float QLearningMgr::getRewardForUnitFlee(USApair usapair, UnitState stateNew) const
+{
+	UnitState lastState = usapair.state;
+	float reward = 0.0f;
+
+	if(lastState.m_lastUnitAction != UNIT_FLEE) //Penalize if we've changed action
+	{
+		reward += -2.0f;
+	}
+
+	//_____________________
+
+	if(stateNew.m_avgHealthGroup == LOW) //Life balance is bad
+	{
+		if(lastState.m_avgHealthGroup == stateNew.m_avgHealthGroup 
+		|| lastState.m_avgHealthGroup > stateNew.m_avgHealthGroup) //Life balance is the same or worse
+		{
+			if(stateNew.m_avgDpsGroup == HIGH)
+			{
+				reward += -5.0f; //Don't flee, we can win this
+			}
+			else if(stateNew.m_avgDpsGroup == MID)
+			{
+				reward += 5.0f; //Things are not looking good. Go away!
+			}
+			else if(stateNew.m_avgDpsGroup == LOW)
+			{
+				reward += 10.0f; //Run for your lives!
+			}
+		}
+	}
+	else if(stateNew.m_avgHealthGroup == MID) 
+	{
+		if(stateNew.m_avgDpsGroup == MID
+		|| stateNew.m_avgDpsGroup == HIGH)
+		{
+			reward += -2.0f; //Don't flee
+		}
+		else if(stateNew.m_avgDpsGroup == LOW)
+		{
+			reward += 5.0f;
+		}
+	}
+	else if(stateNew.m_avgHealthGroup == HIGH) 
+	{
+		if(stateNew.m_avgDpsGroup == LOW)
+		{
+			reward += 2.0f;
+		}
+		else
+		{
+			reward += -7.0f; //Fleeing is for cowards!
+		}
+	}
+
+	if(reward > 0 && lastState.m_distToClosestEnemyGroup < stateNew.m_distToClosestEnemyGroup)
+	{
+		//If fleeing is a good option (ie, reward > 0) and we are effectively getting away, increase reward
+		reward += 1.0f;
+	}
+	else if(reward > 0 && lastState.m_distToClosestEnemyGroup > stateNew.m_distToClosestEnemyGroup)
+	{
+		reward += -1.0f;
+	}
+	else if(reward < 0 && lastState.m_distToClosestEnemyGroup < stateNew.m_distToClosestEnemyGroup)
+	{
+		//If fleeing is NOT a good option and we are getting away, decrease reward!
+		reward += -1.0f;
+	}
+
+	return reward;
 }

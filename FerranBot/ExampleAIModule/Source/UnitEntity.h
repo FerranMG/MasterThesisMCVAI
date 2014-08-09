@@ -19,7 +19,6 @@ public:
 
 	BWAPI::Unitset::iterator getUnitIterator() const;
 	BWAPI::Unit getUnit() const {return m_unit;}
-	UnitAction calculateUnitAction();
 	void   applyCurrentUnitAction();
 
 	bool   getIsEnemyUnit() const;
@@ -37,26 +36,28 @@ public:
 
 	bool canIssueNextAction() const;
 	bool checkCanIssueNextAction();
+	bool mustUpdateCurrentAction();
 	void setCanIssueNextAction(bool yes);
 	void setLastUnitState(UnitState stateNew);
 
 	void setCurrentUnitToAttack(BWAPI::Unit enemyUnit);
+	void resetCurrentActionTilePos();
 
 private:
 	void attackClosestEnemyUnit();
 	void holdPosition();
-	void attackSurround();
 	bool performBasicChecks() const;
 
 	void checkDirectEnemy();
 	void setHealthInUnitState(UnitState& state) const;
-	void setDpsXHealthInUnitState(UnitState& state) const;
+	void setDpsInUnitState(UnitState& state) const;
 	void setDistanceInUnitState(UnitState& state) const;
 	void setHitPointsInUnitState(UnitState& state) const;
 	void setEnemyHitPointsInUnitState(UnitState& state) const;
 	void setLastUnitActionInUnitState(UnitState& state) const;
 	void setLastSquadActionInUnitState(UnitState& state) const;
 	void applySquadActionToUnit();
+
 	BWAPI::Unitset::iterator m_unitIterator;
 	BWAPI::Unit m_unit;
 	BWAPI::Unit m_directEnemy;
@@ -78,11 +79,6 @@ private:
 	int m_frameCount;
 
 	UnitState	m_lastUnitState;
-	UnitAction		m_lastUnitAction;
+	UnitAction	m_lastUnitAction;
 	Action		m_lastSquadAction;
-
-
-
-	//TODO - SEE WHAT OTHER INFO I NEED TO GET FROM THE u IN THE CONSTRUCTOR
-
 };

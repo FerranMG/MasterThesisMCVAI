@@ -14,8 +14,6 @@ public:
 
 	void addSquad(SquadEntity* squadEntity);
 	void addEnemySquad(SquadEntity* squadEntity);
-	void removeSquad(SquadEntity* squadEntity);
-	void removeEnemySquad(SquadEntity* squadEntity);
 	std::vector<SquadEntity*>* getSquads() const;
 	std::vector<SquadEntity*>*  getEnemySquads() const;
 

@@ -2,7 +2,7 @@
 
 State::State()
 {
-	m_avgDpsXHealthGroup = NA;
+	m_avgDpsGroup = NA;
 	m_avgHealthGroup = NA;
 	m_distToClosestEnemyGroup = NA;
 	m_hitPoints = 0;
@@ -11,9 +11,9 @@ State::State()
 }
 
 
-void State::setAvgDpsXHealth(Group num)
+void State::setAvgDps(Group num)
 {
-	m_avgDpsXHealthGroup = num;
+	m_avgDpsGroup = num;
 }
 
 
@@ -33,7 +33,7 @@ void State::setSqDistToClosestEnemyGroup(Group dist)
 
 UnitState::UnitState()
 {
-	m_avgDpsXHealthGroup = NA;
+	m_avgDpsGroup = NA;
 	m_avgHealthGroup = NA;
 	m_distToClosestEnemyGroup = NA;
 	m_hitPoints = 0;
@@ -43,9 +43,9 @@ UnitState::UnitState()
 }
 
 
-void UnitState::setAvgDpsXHealth(Group num)
+void UnitState::setAvgDps(Group num)
 {
-	m_avgDpsXHealthGroup = num;
+	m_avgDpsGroup = num;
 }
 
 
@@ -92,7 +92,7 @@ float Common::getUnitDps(BWAPI::Unit unit)
 
 		default:
 			{
-				assert(false);
+				//assert(false);
 				//TODO - define unit dps
 				return 0.0f;
 			}

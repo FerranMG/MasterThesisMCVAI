@@ -18,7 +18,7 @@ typedef struct SApair
 	{
 		if (this->state.m_avgHealthGroup < n.state.m_avgHealthGroup)
 			return true;
-		if (this->state.m_avgDpsXHealthGroup < n.state.m_avgDpsXHealthGroup)
+		if (this->state.m_avgDpsGroup < n.state.m_avgDpsGroup)
 			return true;
 		if (this->state.m_distToClosestEnemyGroup < n.state.m_distToClosestEnemyGroup)
 			return true;
@@ -43,7 +43,7 @@ typedef struct USApair
 	{
 		if (this->state.m_avgHealthGroup < n.state.m_avgHealthGroup)
 			return true;
-		if (this->state.m_avgDpsXHealthGroup < n.state.m_avgDpsXHealthGroup)
+		if (this->state.m_avgDpsGroup < n.state.m_avgDpsGroup)
 			return true;
 		if (this->state.m_distToClosestEnemyGroup < n.state.m_distToClosestEnemyGroup)
 			return true;
@@ -66,18 +66,18 @@ public:
 			return true;
 		}
 		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
-			    && sapair1.state.m_avgDpsXHealthGroup < sapair2.state.m_avgDpsXHealthGroup)
+			    && sapair1.state.m_avgDpsGroup < sapair2.state.m_avgDpsGroup)
 		{
 			return true;
 		}
 		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
-				&& sapair1.state.m_avgDpsXHealthGroup == sapair2.state.m_avgDpsXHealthGroup
+				&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
 				&& sapair1.state.m_distToClosestEnemyGroup < sapair2.state.m_distToClosestEnemyGroup)
 		{
 			return true;
 		}
 		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
-			&& sapair1.state.m_avgDpsXHealthGroup == sapair2.state.m_avgDpsXHealthGroup
+			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
 			&& sapair1.state.m_distToClosestEnemyGroup == sapair2.state.m_distToClosestEnemyGroup
 			&& sapair1.action < sapair2.action)
 		{
@@ -102,18 +102,18 @@ public:
 			return true;
 		}
 		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
-			&& sapair1.state.m_avgDpsXHealthGroup < sapair2.state.m_avgDpsXHealthGroup)
+			&& sapair1.state.m_avgDpsGroup < sapair2.state.m_avgDpsGroup)
 		{
 			return true;
 		}
 		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
-			&& sapair1.state.m_avgDpsXHealthGroup == sapair2.state.m_avgDpsXHealthGroup
+			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
 			&& sapair1.state.m_distToClosestEnemyGroup < sapair2.state.m_distToClosestEnemyGroup)
 		{
 			return true;
 		}
 		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
-			&& sapair1.state.m_avgDpsXHealthGroup == sapair2.state.m_avgDpsXHealthGroup
+			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
 			&& sapair1.state.m_distToClosestEnemyGroup == sapair2.state.m_distToClosestEnemyGroup
 			&& sapair1.action < sapair2.action)
 		{
@@ -154,6 +154,10 @@ public:
 
 	void forceReward(float reward) {m_forceReward = reward;}
 
+
+	int m_numGamesPlayed;
+	int m_numGamesWon;
+
 private:
 	static QLearningMgr* instance;
 	QLearningMgr();
@@ -176,4 +180,9 @@ private:
 	float RunAwayForUnit(const UnitState& stateLast, const UnitState& stateNew);
 	std::string TranslateGroupToWord(Group group);
 	std::string TranslateActionToWord(int action);
+
+	float getRewardForUnitSquadAction(USApair usapair, UnitState stateNew) const;
+	float getRewardForUnitAttack(USApair usapair, UnitState stateNew) const;
+	float getRewardForUnitHold(USApair usapair, UnitState stateNew) const;
+	float getRewardForUnitFlee(USApair usapair, UnitState stateNew) const;
 };

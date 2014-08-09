@@ -88,6 +88,15 @@ void UnitManager::update()
 
 				unit->setLastUnitState(stateNew);
 
+				if(unit->getCurrentUnitAction() != unit->getLastUnitAction())
+				{
+					unit->resetCurrentActionTilePos();
+				}
+
+				unit->applyCurrentUnitAction();
+			}
+			else if(unit->mustUpdateCurrentAction())
+			{
 				unit->applyCurrentUnitAction();
 			}
 

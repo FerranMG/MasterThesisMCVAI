@@ -7,7 +7,6 @@ using namespace std;
 
 UnitEntity::UnitEntity(BWAPI::Unitset::iterator unit)
 {
-	//TODO - SEE WHAT OTHER INFO I NEED TO GET FROM THE u IN THE CONSTRUCTOR
 	m_unitIterator = unit;
 	m_unit = *unit;
 
@@ -18,7 +17,7 @@ UnitEntity::UnitEntity(BWAPI::Unitset::iterator unit)
 
 	m_currentActionTilePos = Position(-1, -1);
 	m_lastActionTilePos = Position(-1, -1);
-	m_lastActionTilePos = Position(-1, -1);
+	m_currentUnitAttacked = nullptr;
 	m_lastUnitAttacked = nullptr;
 
 	m_isEnemyUnit = false;
@@ -57,18 +56,7 @@ void UnitEntity::update()
 
 			Action lastSquadAction = currentSquad->getLastAction();
 			setLastSquadAction(lastSquadAction);
-
-			//if(squadAction == ATTACK)
-			//{
-			//	m_currentUnitAttacked = currentSquad->getUnitToAttack(this);
-			//}
-			//else if(squadAction == ATTACK_SURROUND)
-			//{
-			//	m_currentActionTilePos = currentSquad->getActionTilePosForSurround(this);
-			//}
 		}
-
-
 	}
 }
 
@@ -104,16 +92,6 @@ BWAPI::Unitset::iterator UnitEntity::getUnitIterator() const
 }
 
 
-UnitAction UnitEntity::calculateUnitAction()
-{
-	//TODO - eg, if there's an enemy unit attacking this unit and it will die, then flee, regarding of what squad action says
-	//POSSIBLY USE SOME SORT OF LEARNING. TAKE THE ACTION FROM A Q-MAP
-	
-	//return m_squadAction;
-	return (UnitAction)0;
-}
-
-
 void UnitEntity::applyCurrentUnitAction()
 {
 	performBasicChecks();
@@ -129,60 +107,69 @@ void UnitEntity::applyCurrentUnitAction()
 		case UNIT_ATTACK:
 		{
 			attackClosestEnemyUnit();
-			//{
-			//	//TODO
-			//int mapWidth = Broodwar->mapWidth() * TILE_SIZE;
-			//int mapHeight = Broodwar->mapHeight() * TILE_SIZE;
-			//	//if(QLearningMgr::getInstance()->getCurrentAction() == COUNT)
-			//	{
-			//		if(x < mapWidth >> 1 && y < mapHeight >> 1) //TOP LEFT
-			//		{
-			//			u->move(Position(x + 10, y));
-			//		}
-			//		else if(x > mapWidth >> 1 && y < mapHeight >> 1) //TOP RIGHT
-			//		{
-			//			u->move(Position(x, y + 10));
-			//		}
-			//		else if(x > mapWidth>> 1 && y > mapHeight >> 1) //BOTTOM RIGHT
-			//		{
-			//			u->move(Position(x - 10, y));
-			//		}
-			//		else //BOTTOM LEFT
-			//		{
-			//			u->move(Position(x, y - 10));
-			//		}
-			//	}
-			//}
+		}
+		break;
+
+		case UNIT_HOLD:
+		{
+			holdPosition();
 
 		}
 		break;
 
-	case UNIT_HOLD:
-	{
-		holdPosition();
-
-	}
-	break;
-
-	case UNIT_FLEE:
-	{
-		//TODO - set a proper fleeing point
-		Position fleeingPoint = Position(0, 0);
-		if(m_lastActionTilePos == Position(-1, -1) || m_lastActionTilePos != fleeingPoint)
+		case UNIT_FLEE:
 		{
-			getUnit()->move(0, 0);
-			m_lastActionTilePos = fleeingPoint;
-			m_frameCount = 0;
+			Position fleeingPoint = Position(0, 0);
+			if(m_directEnemy)
+			{
+				Position enemyPos = m_directEnemy->getPosition();
+				Position currentPos = getUnit()->getPosition();
+				int xDiff = std::abs(enemyPos.x - currentPos.x);
+				int yDiff = std::abs(enemyPos.y - currentPos.y);
+
+				if(xDiff < yDiff) //closer in the x axis than in the y axis => get away in the x axis
+				{
+					if(currentPos.x < enemyPos.x)
+					{
+						fleeingPoint.x = 0;
+						fleeingPoint.y = currentPos.y;
+					}
+					else
+					{
+						fleeingPoint.x = Broodwar->mapWidth();
+						fleeingPoint.y = currentPos.y;
+					}
+				}
+				else
+				{
+					if(currentPos.y < enemyPos.y)
+					{
+						fleeingPoint.x = currentPos.x;
+						fleeingPoint.y = 0;
+					}
+					else
+					{
+						fleeingPoint.x = currentPos.x;
+						fleeingPoint.y = Broodwar->mapHeight();
+					}
+				}
+			}
+
+			if(m_currentActionTilePos == Position(-1, -1) || m_currentActionTilePos != fleeingPoint)
+			{
+				getUnit()->move(fleeingPoint);
+				m_currentActionTilePos = fleeingPoint;
+				m_frameCount = 0;
+			}
 		}
-	}
-	break;
+		break;
 
 
-	default:
-	{
+		default:
+		{
 
-	}
-	break;
+		}
+		break;
 	}
 }
 
@@ -219,16 +206,11 @@ void UnitEntity::holdPosition()
 	int tileY = getUnit()->getPosition().y / TILE_SIZE;
 
 
-	if(m_lastActionTilePos == Position(-1, -1) || m_lastActionTilePos != Position(tileX, tileY))
+	if(m_currentActionTilePos == Position(-1, -1) || m_currentActionTilePos != Position(tileX, tileY))
 	{
 		getUnit()->holdPosition();
-		m_lastActionTilePos = Position(tileX, tileY);
+		m_currentActionTilePos = Position(tileX, tileY);
 	}
-}
-
-void UnitEntity::attackSurround()
-{
-	//TODO
 }
 
 bool UnitEntity::performBasicChecks() const
@@ -277,6 +259,11 @@ void UnitEntity::setIsEnemyUnit(bool yes)
 //Sort of like let the actions already issued have a consequence before sending a new one.
 bool UnitEntity::checkCanIssueNextAction()
 {
+	if(getSquad()->getEnemySquad()->getNumUnits() <= 0)
+	{
+		return false;
+	}
+
 	if(m_unitAction == UNIT_ATTACK
 		|| (m_unitAction == SQUAD_ACTION && m_squadAction == ATTACK))
 	{
@@ -288,46 +275,44 @@ bool UnitEntity::checkCanIssueNextAction()
 		}
 
 		m_frameCount = 0;
-
-		m_lastActionTilePos = Position(-1, -1);
+		//m_lastActionTilePos = Position(-1, -1);
 
 		SquadEntity* enemySquad = m_squad->getEnemySquad();
 			
 		if(enemySquad->getNumUnits() <= 0)
 		{
 			//No enemy units on sight, can send new action
-			//m_unitAction = UNIT_COUNT;
 			m_canIssueNextAction = true;
 		}
 		else
 		{
 			//When some unit has started to attack, then we can send a new action
 			bool isUnitAttacking = m_unit->isAttacking();
-			//for(Unitset::iterator u = m_squad->getSquadUnits().begin(); u != m_squad->getSquadUnits().end(); ++u)
-			//{
-				//if(u->isAttacking())
-				//{
-				//	isAnyUnitAttacking = true;
-				//	break;
-				//}
-			//}
 
 			if(isUnitAttacking)
 			{
-				//m_unitAction = UNIT_COUNT;
 				m_canIssueNextAction = true;
 			}
 		}
 	}
 	else if(m_unitAction == SQUAD_ACTION && m_squadAction == ATTACK_SURROUND)
 	{
-		//TODO 
-
-		if(m_frameCount > 5)
+		if(m_frameCount <= 5)
 		{
-			//m_unitAction = UNIT_COUNT;
+			m_canIssueNextAction = false;
+			return false;
+		}
+
+		m_frameCount = 0;
+		//Position posToMove = getSquad()->getActionTilePosForSurround(this);
+		Position posToMove = m_currentActionTilePos;
+		//const bool reachedSurroundPos = posToMove == m_lastActionTilePos;
+		const bool reachedSurroundPos = posToMove == getUnit()->getPosition();
+		const bool isUnitAttacking = m_unit->isAttacking();
+
+		if(reachedSurroundPos && isUnitAttacking)
+		{
 			m_canIssueNextAction = true;
-			m_frameCount = 0;
 		}
 	}
 	else if(m_unitAction == UNIT_HOLD || m_unitAction == UNIT_FLEE
@@ -336,9 +321,13 @@ bool UnitEntity::checkCanIssueNextAction()
 		//Remove info from old ATTACK action
 		m_lastUnitAttacked = NULL;
 
-		if(m_frameCount > 5)
+		if(m_unitAction == UNIT_HOLD && m_frameCount > 5)
 		{
-			//m_unitAction = UNIT_COUNT;
+			m_canIssueNextAction = true;
+			m_frameCount = 0;
+		}
+		else if(m_unitAction == UNIT_FLEE && m_frameCount > 10)
+		{
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
 		}
@@ -346,6 +335,11 @@ bool UnitEntity::checkCanIssueNextAction()
 	else
 	{
 		m_canIssueNextAction = true;
+	}
+
+	if(m_canIssueNextAction)
+	{
+		m_lastActionTilePos = m_currentActionTilePos;
 	}
 
 	return m_canIssueNextAction;
@@ -356,9 +350,9 @@ UnitState UnitEntity::getCurrentUnitState() const
 {
 	UnitState state;
 
-	assert(m_directEnemy);
+	//assert(m_directEnemy);
 	setHealthInUnitState(state);
-	setDpsXHealthInUnitState(state);
+	setDpsInUnitState(state);
 	setDistanceInUnitState(state);
 	setHitPointsInUnitState(state);
 	setEnemyHitPointsInUnitState(state);
@@ -390,7 +384,7 @@ void UnitEntity::checkDirectEnemy()
 {
 	//Find closest enemy
 	int index = 0;
-	int unitIndexToAttack = 0;
+	int unitIndexToAttack = -1;
 	int minDist = std::numeric_limits<int>::max();
 
 	SquadEntity* enemySquad = m_squad->getEnemySquad();
@@ -407,12 +401,25 @@ void UnitEntity::checkDirectEnemy()
 		}
 	}
 
-	m_directEnemy = enemySquad->getSquadUnits()[unitIndexToAttack];
+	if(unitIndexToAttack >= 0 && enemySquad->getNumUnits() > unitIndexToAttack)
+	{
+		m_directEnemy = enemySquad->getSquadUnits()[unitIndexToAttack];
+	}
+	else
+	{
+		m_directEnemy = nullptr;
+	}
 }
 
 void UnitEntity::setHealthInUnitState(UnitState& state) const
 {
-	//TODO - revise this
+	if(!m_directEnemy)
+	{
+		state.setAvgHealth(NA);
+		return;
+	}
+
+
 	if(m_unit->getHitPoints() < m_directEnemy->getHitPoints() * 0.8)
 	{
 		state.setAvgHealth(LOW);
@@ -428,25 +435,37 @@ void UnitEntity::setHealthInUnitState(UnitState& state) const
 	}
 }
 
-void UnitEntity::setDpsXHealthInUnitState(UnitState& state) const
+void UnitEntity::setDpsInUnitState(UnitState& state) const
 {
+	if(!m_directEnemy)
+	{
+		state.setAvgDps(NA);
+		return;
+	}
+
 	if(Common::getUnitDps(m_unit) < Common::getUnitDps(m_directEnemy) * 0.8)
 	{
-		state.setAvgDpsXHealth(LOW);
+		state.setAvgDps(LOW);
 	}
 	else if(Common::getUnitDps(m_unit) >= Common::getUnitDps(m_directEnemy) * 0.8
 		&&  Common::getUnitDps(m_unit) < Common::getUnitDps(m_directEnemy) * 1.2)
 	{
-		state.setAvgDpsXHealth(MID);
+		state.setAvgDps(MID);
 	}
 	else
 	{
-		state.setAvgDpsXHealth(HIGH);
+		state.setAvgDps(HIGH);
 	}
 }
 
 void UnitEntity::setDistanceInUnitState(UnitState& state) const
 {
+	if(!m_directEnemy)
+	{
+		state.setSqDistToClosestEnemyGroup(NA);
+		return;
+	}
+
 	int dist = Common::computeSqDistBetweenPoints(m_unit->getPosition(), m_directEnemy->getPosition());
 
 	if(dist < 10000) //TODO - REVISE THIS
@@ -470,6 +489,12 @@ void UnitEntity::setHitPointsInUnitState(UnitState& state) const
 
 void UnitEntity::setEnemyHitPointsInUnitState(UnitState& state) const
 {
+	if(!m_directEnemy)
+	{
+		state.m_enemyHitPoints = 0;
+		return;
+	}
+
 	state.m_enemyHitPoints = m_directEnemy->getHitPoints();
 }
 
@@ -540,11 +565,35 @@ void UnitEntity::applySquadActionToUnit()
 
 		case ATTACK_SURROUND:
 		{
-			Position posToMove = getSquad()->getActionTilePosForSurround(this);
-			if(posToMove != m_lastActionTilePos)
+			if(getSquad()->hasNewSurroundPositions())
 			{
+				m_currentActionTilePos = Position(-1, -1);
+			}
+			Position posToMove = m_currentActionTilePos;
+
+			if(posToMove != Position(-1, -1)) //has a pos assigned
+			{
+				static bool attackIssuedForFirstTime = false;
+				if(posToMove != getUnit()->getPosition()) //current position is not the desired one
+				{
+						attackIssuedForFirstTime = false;
+						getUnit()->move(posToMove);
+				}
+				else //pos is the same
+				{
+					if(!attackIssuedForFirstTime) //if it has arrived to the position, but hasn't started attacking, attack
+					{
+						getUnit()->attack(posToMove);
+						attackIssuedForFirstTime = true;
+					}
+				}
+			}
+			else //doesn't have a pos assigned
+			{
+				posToMove = getSquad()->calculateActionTilePosForSurround(this);
+				
+				m_currentActionTilePos = posToMove;
 				getUnit()->move(posToMove);
-				m_lastActionTilePos = posToMove;
 			}
 		}
 		break;
@@ -555,4 +604,28 @@ void UnitEntity::applySquadActionToUnit()
 		}
 		break;
 	}
+}
+
+bool UnitEntity::mustUpdateCurrentAction()
+{
+	if(m_squadAction == ATTACK_SURROUND)
+	{
+		//Position posToMove = getSquad()->getActionTilePosForSurround(this);
+
+		if(getSquad()->hasNewSurroundPositions())
+		{
+			return true;
+		}
+		else if(m_currentActionTilePos == getUnit()->getPosition())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void UnitEntity::resetCurrentActionTilePos()
+{
+	 m_currentActionTilePos = Position(-1, -1);
 }
