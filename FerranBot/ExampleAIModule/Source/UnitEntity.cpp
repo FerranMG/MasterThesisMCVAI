@@ -29,6 +29,8 @@ UnitEntity::UnitEntity(BWAPI::Unitset::iterator unit)
 
 	m_canIssueNextAction = true;
 	m_frameCount = 0;
+
+	m_hasUnitStartedAttack = false;
 }
 
 
@@ -286,16 +288,25 @@ bool UnitEntity::checkCanIssueNextAction()
 		}
 		else
 		{
-			//When some unit has started to attack, then we can send a new action
-			bool isUnitAttacking = m_unit->isAttacking();
 
-			if(isUnitAttacking)
+			//When the unit has finished an attack animation, then we can send a new action
+			//bool isUnitAttacking = m_unit->isAttacking();
+			bool isAttackFrame = m_unit->isAttackFrame();
+
+			if(isAttackFrame)
+			{
+				m_hasUnitStartedAttack = true;
+			}
+
+			if(!isAttackFrame && m_hasUnitStartedAttack) //The unit has finished an attack animation
 			{
 				m_canIssueNextAction = true;
+				m_hasUnitStartedAttack = false;
+				m_frameCount = 0;
 			}
 		}
 	}
-	else if(m_unitAction == SQUAD_ACTION && m_squadAction == ATTACK_SURROUND)
+	else if(m_unitAction == SQUAD_ACTION && (m_squadAction == ATTACK_SURROUND || m_squadAction == ATTACK_HALF_SURROUND))
 	{
 		if(m_frameCount <= 5)
 		{
@@ -309,8 +320,9 @@ bool UnitEntity::checkCanIssueNextAction()
 		//const bool reachedSurroundPos = posToMove == m_lastActionTilePos;
 		const bool reachedSurroundPos = posToMove == getUnit()->getPosition();
 		const bool isUnitAttacking = m_unit->isAttacking();
+		const bool isAttackFrame = m_unit->isAttackFrame();
 
-		if(reachedSurroundPos && isUnitAttacking)
+		if(reachedSurroundPos && (isUnitAttacking || isAttackFrame))
 		{
 			m_canIssueNextAction = true;
 		}
@@ -327,6 +339,11 @@ bool UnitEntity::checkCanIssueNextAction()
 			m_frameCount = 0;
 		}
 		else if(m_unitAction == UNIT_FLEE && m_frameCount > 10)
+		{
+			m_canIssueNextAction = true;
+			m_frameCount = 0;
+		}
+		else if(m_frameCount > 5)
 		{
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
@@ -564,6 +581,7 @@ void UnitEntity::applySquadActionToUnit()
 		break;
 
 		case ATTACK_SURROUND:
+		case ATTACK_HALF_SURROUND:
 		{
 			if(getSquad()->hasNewSurroundPositions())
 			{
@@ -590,10 +608,21 @@ void UnitEntity::applySquadActionToUnit()
 			}
 			else //doesn't have a pos assigned
 			{
-				posToMove = getSquad()->calculateActionTilePosForSurround(this);
-				
-				m_currentActionTilePos = posToMove;
-				getUnit()->move(posToMove);
+				//if(m_squadAction == ATTACK_SURROUND)
+				{
+					posToMove = getSquad()->calculateActionTilePosForSurround(this);
+
+					m_currentActionTilePos = posToMove;
+					getUnit()->move(posToMove);
+				}
+				//else if(m_squadAction == ATTACK_HALF_SURROUND)
+				//{
+				//	posToMove = getSquad()->calculateHalfSurroundPositions(this);
+
+				//	m_currentActionTilePos = posToMove;
+				//	getUnit()->move(posToMove);
+				//}
+
 			}
 		}
 		break;
@@ -608,7 +637,7 @@ void UnitEntity::applySquadActionToUnit()
 
 bool UnitEntity::mustUpdateCurrentAction()
 {
-	if(m_squadAction == ATTACK_SURROUND)
+	if(m_squadAction == ATTACK_SURROUND || m_squadAction == ATTACK_HALF_SURROUND)
 	{
 		//Position posToMove = getSquad()->getActionTilePosForSurround(this);
 

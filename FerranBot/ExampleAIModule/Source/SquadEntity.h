@@ -57,6 +57,8 @@ public:
 	bool performBasicChecks(BWAPI::Unitset::iterator u);
 	void holdPositions();
 	void attackSurround();
+	void attackHalfSurround();
+
 	void setHealthInState(State& state);
 	void setDpsInState(State& state);
 	void setDistanceInState(State& state);
@@ -83,6 +85,7 @@ public:
 	BWAPI::Position calculateActionTilePosForSurround(UnitEntity* unitEntity);
 	bool hasNewSurroundPositions() const;
 	bool canIssueNextAction();
+	std::vector<BWAPI::Position> calculateHalfSurroundPositions(bool forceCalculate);
 	BWAPI::Position m_lastActionTilePos;
 	BWAPI::Unit		m_lastUnitAttacked;
 

@@ -81,7 +81,6 @@ void UnitManager::update()
 
 				unit->setLastUnitAction(unit->getCurrentUnitAction());
 				unit->setUnitAction(unitAction);
-				//unit->setLastSquadAction(unit->getCurrentSquadAction());
 				unit->setLastSquadAction(unit->getLastSquadAction());
 
 				unit->setCanIssueNextAction(false);
@@ -102,33 +101,6 @@ void UnitManager::update()
 
 			unit->checkCanIssueNextAction();
 		}
-
-
-
-		//Position posLeftTop = (*unit)->getPosition();
-		//posLeftTop.x -= 20;
-		//posLeftTop.y -= 20;
-		//Position posRightBottom = (*unit)->getPosition();
-
-		//posRightBottom.x += 20;
-		//posRightBottom.y += 20;
-		//Broodwar->drawBoxScreen(posLeftTop, posRightBottom, Colors::Blue);
-		//Broodwar->drawBoxScreen(posLeftTop, posRightBottom, Colors::Red, true);
-
-		//Broodwar->drawTextScreen(Position(100, 100), "hoasdfoahdfopihs");
-		//Broodwar->drawLineScreen(Position(100, 100), Position(500, 500), Colors::Blue);
-		//
-		//m_unit->pos
-		//Position tilePosLeftTop = m_unit->getTilePosition();
-		//Position tilePosRightBototm = m_unit->getTilePosition();
-		//tilePosLeftTop.x -= 20;
-		//tilePosLeftTop.y -= 20;
-		//tilePosRightBototm.x += 20;
-		//tilePosRightBototm.y += 20;
-
-		//Broodwar->drawBoxScreen(tilePosLeftTop, tilePosRightBototm, Colors::Red, true);
-
-	
 	}
 }
 

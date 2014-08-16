@@ -8,7 +8,8 @@
 typedef enum x{ATTACK				= 0, //Direct attack
 			   HOLD					= 1, 
 			   ATTACK_SURROUND		= 2,
-			   COUNT				= 3} Action;
+			   ATTACK_HALF_SURROUND = 3,
+			   COUNT				= 4} Action;
 
 typedef enum y{SQUAD_ACTION				= 10,
 			   UNIT_ATTACK				= 11,

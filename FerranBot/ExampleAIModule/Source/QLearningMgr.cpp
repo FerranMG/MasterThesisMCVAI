@@ -12,7 +12,7 @@ using namespace std;
 const float GAMMA = 0.9f;
 
 QLearningMgr* QLearningMgr::instance = nullptr;
-const int QLearningMgr::MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT = 1000; //TODO - CHANGE THIS
+const int QLearningMgr::MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT = 1000;
 float QLearningMgr::m_exploreExploitCoef = -1.0f;
 int QLearningMgr::m_totalNumStatesVisited = 0;
 
@@ -81,10 +81,15 @@ QLearningMgr* QLearningMgr::getInstance()
 Action QLearningMgr::updateSquadQ(State lastState, Action lastAction, State stateNew)
 {
 	//DEBUG
-	static bool m_forceExploration = true;
+	static bool m_forceExploration = false;
+	static bool m_forceExploitation = false;
 	if(m_forceExploration)
 	{
 		m_exploreExploitCoef = -1.0f;
+	}
+	else if(m_forceExploitation)
+	{
+		m_exploreExploitCoef = 1.0f;
 	}
 	else
 	//_DEBUG
@@ -694,6 +699,7 @@ void QLearningMgr::writeQMapHumanReadable()
 
 	if(ofs_human_readable_qmap.is_open())
 	{
+		Group lastDist = NA;
 		while(iter != q_map->end())
 		{
 			ofs_human_readable_qmap << "State avgDps = " << TranslateGroupToWord(iter->first.state.m_avgDpsGroup) << " avgHealth = " 
@@ -701,6 +707,12 @@ void QLearningMgr::writeQMapHumanReadable()
 				<< " action = " << TranslateActionToWord(iter->first.action);
 			ofs_human_readable_qmap << " q_value = " << iter->second;
 			ofs_human_readable_qmap << " visited = " << itercount->second << endl;
+
+			if(iter->first.state.m_distToClosestEnemyGroup != lastDist)
+			{
+				ofs_human_readable_qmap << "\n";
+				lastDist = iter->first.state.m_distToClosestEnemyGroup;
+			}
 			 
 			iter++;
 			itercount++;
@@ -727,6 +739,7 @@ void QLearningMgr::writeQMapHumanReadable()
 
 	if(ofs_human_readable_qmapUnit.is_open())
 	{
+		Group lastDist = NA;
 		while(iterUnitMap != q_mapUnit->end())
 		{
 			ofs_human_readable_qmapUnit << "State avgDps = " << TranslateGroupToWord(iterUnitMap->first.state.m_avgDpsGroup) << " avgHealth = " 
@@ -734,6 +747,12 @@ void QLearningMgr::writeQMapHumanReadable()
 				<< " action = " << TranslateActionToWord(iterUnitMap->first.action);
 			ofs_human_readable_qmapUnit << " q_value = " << iterUnitMap->second;
 			ofs_human_readable_qmapUnit << " visited = " << iterUnitCount->second << endl;
+
+			if(iterUnitMap->first.state.m_distToClosestEnemyGroup != lastDist)
+			{
+				ofs_human_readable_qmap << "\n";
+				lastDist = iterUnitMap->first.state.m_distToClosestEnemyGroup;
+			}
 
 			iterUnitMap++;
 			iterUnitCount++;
@@ -847,10 +866,15 @@ void QLearningMgr::writeQVars()
 UnitAction QLearningMgr::updateUnitQ(UnitState lastState, UnitAction lastUnitAction, Action lastSquadAction, UnitState stateNew)
 {
 	//DEBUG
-	static bool m_forceExploration = true;
+	static bool m_forceExploration = false;
+	static bool m_forceExploitation = false;
 	if(m_forceExploration)
 	{
 		m_exploreExploitCoef = -1.0f;
+	}
+	else if(m_forceExploitation)
+	{
+		m_exploreExploitCoef = 1.0f;
 	}
 	//else
 	//	//_DEBUG
@@ -1056,6 +1080,10 @@ string QLearningMgr::TranslateActionToWord(int action)
 	else if(action == ATTACK_SURROUND)
 	{
 		return "ATTACK_SURROUND";
+	}
+	else if(action == ATTACK_HALF_SURROUND)
+	{
+		return "ATTACK_HALF    ";
 	}
 	else if(action == COUNT)
 	{

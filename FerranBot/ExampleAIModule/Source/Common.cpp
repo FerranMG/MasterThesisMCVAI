@@ -78,24 +78,32 @@ float Common::getUnitDps(BWAPI::Unit unit)
 			return 6.97f;
 		}
 		break;
+		case BWAPI::UnitTypes::Enum::Terran_Goliath:
+		{
+			return 12.0f;
+		}
+		break;
+
+
 		case BWAPI::UnitTypes::Enum::Zerg_Ultralisk:
 		{
 			return 17.42f;
 		}
 		break;
 		case BWAPI::UnitTypes::Enum::Zerg_Zergling:
-			{
-				return 7.18f;
-			}
-			break;
+		{
+			return 7.18f;
+		}
+		break;
+
 
 
 		default:
-			{
-				//assert(false);
-				//TODO - define unit dps
-				return 0.0f;
-			}
+		{
+			//assert(false);
+			//TODO - define unit dps
+			return 0.0f;
+		}
 		/*Terran_Marine = 0,
 			Terran_Ghost,
 			Terran_Vulture,
@@ -339,6 +347,12 @@ float Common::getUnitDps(BWAPI::Unitset::iterator unit)
 			return 6.97f;
 		}
 		break;
+		case BWAPI::UnitTypes::Enum::Terran_Goliath:
+			{
+				return 12.0f;
+			}
+			break;
+
 		case BWAPI::UnitTypes::Enum::Zerg_Ultralisk:
 		{
 			return 17.42f;

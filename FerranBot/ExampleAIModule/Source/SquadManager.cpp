@@ -41,6 +41,12 @@ void SquadManager::update()
 
 
 	//Add newly discovered enemy units to the current squad.
+	Player enemy = Broodwar->enemy();
+	if(!enemy)
+	{
+		return;
+	}
+
 	Unitset enemyUnits = Broodwar->enemy()->getUnits();
 	for(Unitset::iterator it = enemyUnits.begin(); it != enemyUnits.end(); it++)
 	{

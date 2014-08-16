@@ -81,4 +81,6 @@ private:
 	UnitState	m_lastUnitState;
 	UnitAction	m_lastUnitAction;
 	Action		m_lastSquadAction;
+
+	bool m_hasUnitStartedAttack;
 };

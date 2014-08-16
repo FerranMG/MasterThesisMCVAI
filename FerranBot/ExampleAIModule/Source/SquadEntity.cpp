@@ -168,6 +168,11 @@ void SquadEntity::calculateAvgDps()
 
 void SquadEntity::calculateSqDistToClosestEnemyGroup()
 {
+	Player enemy = Broodwar->enemy();
+	if(!enemy)
+	{
+		return;
+	}
 	Unitset enemyUnits = Broodwar->enemy()->getUnits();
 	if(enemyUnits.size() > 0)
 	{
@@ -299,7 +304,7 @@ std::vector<Position> SquadEntity::calculateSurroundPositions(bool forceCalculat
 	}
 
 	
-	float radius = sqrt(std::max(m_enemySquad->getDispersionSqDist(), 80.0f * 80.0f));
+	float radius = sqrt(std::max(m_enemySquad->getDispersionSqDist(), 130.0f * 130.0f));
 	int index = 0;
 	double radsBetweenPos = 2 * 3.14159 / m_numUnits;
 
@@ -501,6 +506,12 @@ void SquadEntity::applyCurrentAction()
 		case ATTACK_SURROUND:
 		{
 			attackSurround();
+		}
+		break;
+
+		case ATTACK_HALF_SURROUND:
+		{
+			attackHalfSurround();
 		}
 		break;
 
@@ -717,12 +728,18 @@ BWAPI::Unit SquadEntity::getUnitToAttack(UnitEntity* unitEntity)
 
 BWAPI::Position SquadEntity::calculateActionTilePosForSurround(UnitEntity* unitEntity)
 {
-
-	assert(unitEntity->getCurrentSquadAction() == ATTACK_SURROUND);
+	assert(unitEntity->getCurrentSquadAction() == ATTACK_SURROUND || unitEntity->getCurrentSquadAction() == ATTACK_HALF_SURROUND);
 	
 	if(m_surroundPositions.empty())
 	{
-		calculateSurroundPositions(true);
+		if(unitEntity->getCurrentSquadAction() == ATTACK_SURROUND)
+		{
+			calculateSurroundPositions(true);
+		}
+		else if(unitEntity->getCurrentSquadAction() == ATTACK_HALF_SURROUND)
+		{
+			calculateHalfSurroundPositions(true);
+		}
 	}
 
 	Position unitPos = unitEntity->getUnit()->getPosition();
@@ -757,4 +774,85 @@ bool SquadEntity::canIssueNextAction()
 bool SquadEntity::hasNewSurroundPositions() const
 {
 	return !m_surroundPositions.empty();
+}
+
+void SquadEntity::attackHalfSurround()
+{
+	std::vector<Position> surroundPositions;
+	m_surroundPositions = calculateHalfSurroundPositions(false);
+}
+
+struct FloatPosition
+{
+	FloatPosition() {}
+	FloatPosition(float x, float y): x(x), y(y) {}
+	float x;
+	float y;
+};
+
+std::vector<BWAPI::Position> SquadEntity::calculateHalfSurroundPositions(bool forceCalculate)
+{
+	std::vector<Position> retVect;
+
+	if(m_enemySquad->getNumUnits() <= 0)
+	{
+		m_posToSurround = Position(0, 0);
+		return retVect;
+	}
+
+	Position oldSurroundPos = m_posToSurround;
+	Position newSurroundPos = m_enemySquad->getAvgPosition();
+	if(Common::computeSqDistBetweenPoints(oldSurroundPos, newSurroundPos) > 2500 || forceCalculate)
+	{
+		m_posToSurround = newSurroundPos;
+	}
+	else
+	{
+		return retVect;
+	}
+
+
+	float radius = sqrt(std::max(m_enemySquad->getDispersionSqDist(), 130.0f * 130.0f));
+	double radsBetweenPos = 2 * 3.14159 / m_numUnits / 2; // /2 because only half surround
+
+	//Translate pos to surround to origin (0, 0) 
+	Position avgPosTranslatedToOrigin = m_avgPos - m_posToSurround;
+	//Uniform
+	FloatPosition floatPos(static_cast<float>(avgPosTranslatedToOrigin.x), static_cast<float>(avgPosTranslatedToOrigin.y));
+	float norm = sqrt(floatPos.x * floatPos.x+ floatPos.y * floatPos.y);
+	
+	FloatPosition normalizedAvgPosTranslatedToOrigin = FloatPosition(avgPosTranslatedToOrigin.x / norm, avgPosTranslatedToOrigin.y / norm);
+	//Rotate
+	FloatPosition rotatedPos;
+	int index = -static_cast<int>(m_numUnits / 2) + 1;
+	int rot_index = 0;
+	for(Unitset::iterator u = m_squadUnits.begin(); u != m_squadUnits.end(); u++, index++)
+	{
+		rot_index = rot_index * (-1);
+
+		rotatedPos.x = static_cast<float>(normalizedAvgPosTranslatedToOrigin.x * cos(radsBetweenPos * rot_index) - normalizedAvgPosTranslatedToOrigin.y * sin(radsBetweenPos * rot_index));
+		rotatedPos.y = static_cast<float>(normalizedAvgPosTranslatedToOrigin.x * sin(radsBetweenPos * rot_index) + normalizedAvgPosTranslatedToOrigin.y * cos(radsBetweenPos * rot_index));
+
+		if(rot_index >= 0)
+		{
+			rot_index++;
+			rot_index -= 2 * rot_index;
+		}
+
+		//Multiply by surround radius
+		rotatedPos.x *= radius;
+		rotatedPos.y *= radius;
+
+		//Translate back to correct position
+		rotatedPos.x += m_posToSurround.x;
+		rotatedPos.y += m_posToSurround.y;
+
+		Position finalPos(static_cast<int>(rotatedPos.x), static_cast<int>(rotatedPos.y));
+		retVect.push_back(finalPos);
+
+
+	}
+
+	return retVect;
+
 }
