@@ -83,7 +83,27 @@ float Common::getUnitDps(BWAPI::Unit unit)
 			return 12.0f;
 		}
 		break;
-
+		case BWAPI::UnitTypes::Enum::Terran_Firebat:
+			{
+				return f;
+			}
+			break;
+		case BWAPI::UnitTypes::Enum::Terran_Ghost:
+			{
+				return 6.67f;
+			}
+			break;
+		case BWAPI::UnitTypes::Enum::Terran_Siege_Tank_Tank_Mode:
+		case BWAPI::UnitTypes::Enum::Terran_Siege_Tank_Tank_Mode_Turret:
+			{
+				return 20.0f; //This is an avg. Siege tank damage depends on wheter it's attacking an armored or a non-armored unit
+			}
+			break;
+		case BWAPI::UnitTypes::Enum::Terran_Vulture:
+			{
+				return 5.9f;
+			}
+			break;
 
 		case BWAPI::UnitTypes::Enum::Zerg_Ultralisk:
 		{
@@ -95,6 +115,7 @@ float Common::getUnitDps(BWAPI::Unit unit)
 			return 7.18f;
 		}
 		break;
+
 
 
 

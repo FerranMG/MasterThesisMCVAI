@@ -153,8 +153,11 @@ public:
 	//std::map<USApair, int, compare>*	 q_countUnit;
 
 	void forceReward(float reward) {m_forceReward = reward;}
+	int getTotalNumStatesVisited();
 
 
+	static const int MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT;
+	static const int MAX_NUM_GAMES_PLAYED_BEFORE_TOTAL_EXPLOIT;
 	int m_numGamesPlayed;
 	int m_numGamesWon;
 
@@ -162,11 +165,9 @@ private:
 	static QLearningMgr* instance;
 	QLearningMgr();
 	void updateExploreExploitCoef();
-	int getTotalNumStatesVisited();
 	float RunAway(const State& stateLast, const State& stateNew);
 	static float m_exploreExploitCoef;
 	static int m_totalNumStatesVisited;
-	static const int MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT;
 	float m_forceReward;
 	float m_forceUnitReward;
 

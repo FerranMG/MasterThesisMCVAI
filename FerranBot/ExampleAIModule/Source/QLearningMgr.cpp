@@ -12,7 +12,8 @@ using namespace std;
 const float GAMMA = 0.9f;
 
 QLearningMgr* QLearningMgr::instance = nullptr;
-const int QLearningMgr::MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT = 1000;
+const int QLearningMgr::MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT = 2000;
+const int QLearningMgr::MAX_NUM_GAMES_PLAYED_BEFORE_TOTAL_EXPLOIT = 500;
 float QLearningMgr::m_exploreExploitCoef = -1.0f;
 int QLearningMgr::m_totalNumStatesVisited = 0;
 
@@ -575,9 +576,19 @@ void QLearningMgr::updateExploreExploitCoef()
 {
 	float totalExplore = -1.0f;
 	float totalExploit = 1.0f;
-	if(getTotalNumStatesVisited() < MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT)
+	//if(getTotalNumStatesVisited() < MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT)
+	//{
+	//	m_exploreExploitCoef = (totalExplore * (MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT - getTotalNumStatesVisited()) + totalExploit * getTotalNumStatesVisited()) / MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT;
+	//}
+	//else
+	//{
+	//	m_exploreExploitCoef = totalExploit;
+	//}
+
+
+	if(m_numGamesPlayed < MAX_NUM_GAMES_PLAYED_BEFORE_TOTAL_EXPLOIT)
 	{
-		m_exploreExploitCoef = (totalExplore * (MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT - getTotalNumStatesVisited()) + totalExploit * getTotalNumStatesVisited()) / MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT;
+		m_exploreExploitCoef = (totalExplore * (MAX_NUM_GAMES_PLAYED_BEFORE_TOTAL_EXPLOIT - m_numGamesPlayed) + totalExploit * m_numGamesPlayed) / MAX_NUM_GAMES_PLAYED_BEFORE_TOTAL_EXPLOIT;
 	}
 	else
 	{
