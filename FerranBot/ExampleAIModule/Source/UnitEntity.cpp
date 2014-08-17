@@ -199,7 +199,10 @@ void UnitEntity::attackClosestEnemyUnit()
 	{
 		m_unitIterator->attack(unitToAttack);
 	}
-
+	else if(Common::computeSqDistBetweenPoints(m_currentActionTilePos, getUnit()->getPosition()) > 10000)
+	{
+		getUnit()->move(m_currentActionTilePos);
+	}
 }
 
 void UnitEntity::holdPosition()
@@ -212,6 +215,14 @@ void UnitEntity::holdPosition()
 	{
 		getUnit()->holdPosition();
 		m_currentActionTilePos = Position(tileX, tileY);
+	}
+
+	if(m_directEnemy)
+	{
+		if(Common::computeSqDistBetweenPoints(m_directEnemy->getPosition(), getUnit()->getPosition()) > 10000)
+		{
+			getUnit()->move(m_directEnemy->getPosition());
+		}
 	}
 }
 
@@ -421,10 +432,12 @@ void UnitEntity::checkDirectEnemy()
 	if(unitIndexToAttack >= 0 && enemySquad->getNumUnits() > unitIndexToAttack)
 	{
 		m_directEnemy = enemySquad->getSquadUnits()[unitIndexToAttack];
+		m_currentActionTilePos = enemySquad->getSquadUnits()[unitIndexToAttack]->getPosition();
 	}
 	else
 	{
 		m_directEnemy = nullptr;
+		m_currentActionTilePos = Position(-1, -1);
 	}
 }
 
@@ -577,6 +590,10 @@ void UnitEntity::applySquadActionToUnit()
 				getUnit()->attack(unitToAttack);
 				m_lastUnitAttacked = unitToAttack;
 			}
+			else if(Common::computeSqDistBetweenPoints(m_currentActionTilePos, getUnit()->getPosition()) > 10000)
+			{
+				getUnit()->move(m_currentActionTilePos);
+			}
 		}
 		break;
 
@@ -608,21 +625,10 @@ void UnitEntity::applySquadActionToUnit()
 			}
 			else //doesn't have a pos assigned
 			{
-				//if(m_squadAction == ATTACK_SURROUND)
-				{
-					posToMove = getSquad()->calculateActionTilePosForSurround(this);
+				posToMove = getSquad()->calculateActionTilePosForSurround(this);
 
-					m_currentActionTilePos = posToMove;
-					getUnit()->move(posToMove);
-				}
-				//else if(m_squadAction == ATTACK_HALF_SURROUND)
-				//{
-				//	posToMove = getSquad()->calculateHalfSurroundPositions(this);
-
-				//	m_currentActionTilePos = posToMove;
-				//	getUnit()->move(posToMove);
-				//}
-
+				m_currentActionTilePos = posToMove;
+				getUnit()->move(posToMove);
 			}
 		}
 		break;

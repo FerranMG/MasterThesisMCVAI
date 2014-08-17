@@ -160,6 +160,7 @@ public:
 	static const int MAX_NUM_GAMES_PLAYED_BEFORE_TOTAL_EXPLOIT;
 	int m_numGamesPlayed;
 	int m_numGamesWon;
+	std::vector<int>* m_gamesWon;
 
 private:
 	static QLearningMgr* instance;

@@ -26,8 +26,4 @@ public:
 private:
 	static SquadManager* instance;
 	SquadManager();
-
-
-
-
 };

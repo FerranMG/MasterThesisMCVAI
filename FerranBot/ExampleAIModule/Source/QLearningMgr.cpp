@@ -50,6 +50,8 @@ QLearningMgr::QLearningMgr()
 
 	m_numGamesPlayed = 0;
 	m_numGamesWon = 0;
+
+	m_gamesWon = new std::vector<int>;
 }
 
 
@@ -59,11 +61,13 @@ QLearningMgr::~QLearningMgr()
 	delete q_count;
 	delete q_mapUnit;
 	delete q_countUnit;
+	delete  m_gamesWon;
 
 	q_map = nullptr;
 	q_count = nullptr;
 	q_mapUnit = nullptr;
 	q_countUnit = nullptr;
+	m_gamesWon = nullptr;
 
 	instance = nullptr;
 }
@@ -553,13 +557,25 @@ void QLearningMgr::readFromStream()
 	if(!ifs_vars.fail())
 	{
 		ifs_count.seekg(0, ios::beg);
-		//if(ifs_count.eof() == false)
 		{
 			ifs_vars.read((char*)&m_exploreExploitCoef, sizeof(float));
 			ifs_vars.read((char*)&m_totalNumStatesVisited, sizeof(int));
 
 			ifs_vars.read((char*)&m_numGamesPlayed, sizeof(int));
 			ifs_vars.read((char*)&m_numGamesWon, sizeof(int));
+
+			for(int i = 0; i < m_numGamesPlayed; ++i)
+			{
+				if(ifs_vars.eof())
+				{
+					break;
+				}
+
+				int gameWon;
+
+				ifs_vars.read((char*)&gameWon, sizeof(int));
+				m_gamesWon->push_back(gameWon);
+			}
 		}
 	}
 
@@ -732,6 +748,15 @@ void QLearningMgr::writeQMapHumanReadable()
 
 		ofs_human_readable_qmap << "\n\n\nNum games played = " << m_numGamesPlayed;
 		ofs_human_readable_qmap << "\nNum games won = " << m_numGamesWon;
+
+		std::vector<int>::iterator gamesWonIt = m_gamesWon->begin();
+		int index = 0;
+		while(gamesWonIt != m_gamesWon->end())
+		{
+			ofs_human_readable_qmap << "\ngame number " << index << " has been " << m_gamesWon->at(index);
+			index++;
+			gamesWonIt++;
+		}
 	}
 
 	ofs_human_readable_qmap.close();
@@ -869,6 +894,15 @@ void QLearningMgr::writeQVars()
 		ofs_vars.write((char*)&m_numGamesPlayed, sizeof(int));
 		ofs_vars.write((char*)&m_numGamesWon, sizeof(int));
 
+		std::vector<int>::iterator gamesWonIt = m_gamesWon->begin();
+		int index = 0;
+		while(gamesWonIt != m_gamesWon->end())
+		{
+			ofs_vars.write((char*)&m_gamesWon->at(index), sizeof(int));
+			//ofs_vars.write((char*)&gamesWonIt, sizeof(int));
+			gamesWonIt++;
+			index++;
+		}
 	}
 	ofs_vars.close();
 }
