@@ -102,6 +102,8 @@ void UnitManager::update()
 			unit->checkCanIssueNextAction();
 		}
 	}
+
+	QLearningMgr::getInstance()->resetForcedUnitReward();
 }
 
 
@@ -121,4 +123,9 @@ void UnitManager::removeAllUnitEntities()
 	{
 		m_allUnitEntities.pop_back();
 	}
+}
+
+vector<UnitEntity*> UnitManager::getAllUnitEntities() const
+{
+	return m_allUnitEntities;
 }

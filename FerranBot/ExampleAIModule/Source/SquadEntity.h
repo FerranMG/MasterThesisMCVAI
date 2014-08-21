@@ -86,9 +86,13 @@ public:
 	bool hasNewSurroundPositions() const;
 	bool canIssueNextAction();
 	std::vector<BWAPI::Position> calculateHalfSurroundPositions(bool forceCalculate);
+	int getNumUnitsKilled();
+
+
 	BWAPI::Position m_lastActionTilePos;
 	BWAPI::Unit		m_lastUnitAttacked;
 
+	int m_absoluteNumberOfUnitsEverInSquad;
 
 private:
 	BWAPI::Unitset	m_squadUnits;

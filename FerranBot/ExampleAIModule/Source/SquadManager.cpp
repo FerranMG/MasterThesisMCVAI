@@ -55,6 +55,7 @@ void SquadManager::update()
 		if(currentSquadUnits.find(*it) == currentSquadUnits.end())
 		{
 			m_enemySquads->at(0)->addUnit(it);
+			m_enemySquads->at(0)->m_absoluteNumberOfUnitsEverInSquad++;
 		}
 	}
 
@@ -99,6 +100,8 @@ void SquadManager::update()
 			squad->checkCanIssueNextAction();
 		}
 	}
+
+	QLearningMgr::getInstance()->resetForcedReward();
 }
 
 

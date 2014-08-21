@@ -16,6 +16,7 @@ SquadEntity::SquadEntity()
 	m_lastState = State();
 
 	m_frameCount = 0;
+	m_absoluteNumberOfUnitsEverInSquad = 0;
 }
 
 
@@ -855,4 +856,15 @@ std::vector<BWAPI::Position> SquadEntity::calculateHalfSurroundPositions(bool fo
 
 	return retVect;
 
+}
+
+int SquadEntity::getNumUnitsKilled()
+{
+	int killCount = 0;
+	for(Unitset::iterator it = m_squadUnits.begin(); it < m_squadUnits.end(); it++)
+	{
+		killCount += it->getKillCount();
+	}
+
+	return killCount;
 }

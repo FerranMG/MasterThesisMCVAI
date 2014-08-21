@@ -153,7 +153,10 @@ public:
 	//std::map<USApair, int, compare>*	 q_countUnit;
 
 	void forceReward(float reward) {m_forceReward = reward;}
+	void forceUnitReward(float reward) {m_forceUnitReward = reward;}
 	int getTotalNumStatesVisited();
+	void resetForcedReward();
+	void resetForcedUnitReward();
 
 
 	static const int MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT;

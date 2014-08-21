@@ -20,6 +20,9 @@ public:
 
 	void removeAllUnitEntities();
 
+	std::vector<UnitEntity*> getAllUnitEntities() const;
+
+
 private:
 	static UnitManager* instance;
 	UnitManager();

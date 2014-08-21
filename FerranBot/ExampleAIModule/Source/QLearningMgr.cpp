@@ -151,9 +151,7 @@ float QLearningMgr::getReward(SApair sapair, State stateNew)
  {
 	 if(m_forceReward != 0)
 	 {
-		 float reward = m_forceReward;
-		 m_forceReward = 0;
-		 return reward;
+		 return m_forceReward;
 	 }
 
 	float reward = 0.0f;
@@ -974,6 +972,11 @@ float QLearningMgr::getAlphaForUnit(USApair usapair)
 
 float QLearningMgr::getRewardForUnit(USApair usapair, UnitState stateNew)
 {
+	if(m_forceUnitReward != 0)
+	{
+		return m_forceUnitReward;
+	}
+
 	UnitAction lastAction = usapair.action;
 	switch(lastAction)
 	{
@@ -1481,4 +1484,14 @@ float QLearningMgr::getRewardForUnitFlee(USApair usapair, UnitState stateNew) co
 	}
 
 	return reward;
+}
+
+void QLearningMgr::resetForcedReward()
+{
+	m_forceReward = 0;
+}
+
+void QLearningMgr::resetForcedUnitReward()
+{
+	m_forceUnitReward = 0;
 }
