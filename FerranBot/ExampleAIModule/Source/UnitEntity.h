@@ -51,6 +51,7 @@ private:
 	void checkDirectEnemy();
 	void setHealthInUnitState(UnitState& state) const;
 	void setDpsInUnitState(UnitState& state) const;
+	void setNumEnemyUnitsInRadiusUnitState(UnitState& state) const;
 	void setDistanceInUnitState(UnitState& state) const;
 	void setHitPointsInUnitState(UnitState& state) const;
 	void setEnemyHitPointsInUnitState(UnitState& state) const;

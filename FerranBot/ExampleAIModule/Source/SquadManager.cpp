@@ -83,7 +83,7 @@ void SquadManager::update()
 			{
 				Action action = QLearningMgr::getInstance()->updateSquadQ(squad->getLastState(), squad->getLastAction(), stateNew);
 
-				Broodwar->sendText("Last State H %d DPS %d dist %d Action %d", squad->getLastState().m_avgHealthGroup, squad->getLastState().m_avgDpsGroup, squad->getLastState().m_distToClosestEnemyGroup, squad->getLastAction());
+				//Broodwar->sendText("Last State H %d DPS %d dist %d Action %d", squad->getLastState().m_avgHealthGroup, squad->getLastState().m_avgDpsGroup, squad->getLastState().m_distToClosestEnemyGroup, squad->getLastAction());
 				assert(action >= ATTACK && action <= COUNT);
 
 				squad->setLastAction(squad->getCurrentAction());

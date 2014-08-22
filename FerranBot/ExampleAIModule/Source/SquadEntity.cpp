@@ -142,7 +142,8 @@ void SquadEntity::calculateAvgHealth()
 
 	if(m_numUnits > 0)
 	{
-		setAvgHealth(totalHealth/m_numUnits);
+		//setAvgHealth(totalHealth/m_numUnits);
+		setAvgHealth(totalHealth);
 	}
 }
 
@@ -163,7 +164,8 @@ void SquadEntity::calculateAvgDps()
 
 	if(m_numUnits > 0)
 	{
-		setAvgDps((int)totalDps/m_numUnits);
+		setAvgDps((int)totalDps);
+		//setAvgDps((int)totalDps/m_numUnits);
 	}
 }
 

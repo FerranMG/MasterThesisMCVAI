@@ -79,6 +79,9 @@ void UnitManager::update()
 			{
 				UnitAction unitAction = QLearningMgr::getInstance()->updateUnitQ(unit->getLastUnitState(), unit->getLastUnitAction(), unit->getLastSquadAction(), stateNew);
 
+				Broodwar->sendText("SquadAction %s ", QLearningMgr::getInstance()->TranslateActionToWord(unit->getCurrentSquadAction()).c_str(), " UnitAction %s " , QLearningMgr::getInstance()->TranslateActionToWord(unitAction).c_str());
+
+
 				unit->setLastUnitAction(unit->getCurrentUnitAction());
 				unit->setUnitAction(unitAction);
 				unit->setLastSquadAction(unit->getLastSquadAction());

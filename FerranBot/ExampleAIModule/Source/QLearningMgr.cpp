@@ -369,6 +369,9 @@ float QLearningMgr::getOptimalFutureValueForUnit(UnitState state, UnitAction& ou
 			USApair usapair = USApair(state, (UnitAction)act);
 
 			map<USApair, float, unitCompare>::iterator it = q_mapUnit->find(usapair);
+			map<USApair, float, unitCompare>::iterator end = q_mapUnit->end();
+			
+			//If this new state has already been found before, choose the least used action
 			if(it != q_mapUnit->end())
 			{
 				map<USApair, int, unitCompare>::iterator it_count = q_countUnit->find(usapair);
@@ -728,7 +731,7 @@ void QLearningMgr::writeQMapHumanReadable()
 		while(iter != q_map->end())
 		{
 			ofs_human_readable_qmap << "State avgDps = " << TranslateGroupToWord(iter->first.state.m_avgDpsGroup) << " avgHealth = " 
-				<< TranslateGroupToWord(iter->first.state.m_avgHealthGroup) << " dist = " << TranslateGroupToWord(iter->first.state.m_distToClosestEnemyGroup) 
+				<< TranslateGroupToWord(iter->first.state.m_avgHealthGroup) << " dist = " << TranslateGroupToWord(iter->first.state.m_distToClosestEnemyGroup)
 				<< " action = " << TranslateActionToWord(iter->first.action);
 			ofs_human_readable_qmap << " q_value = " << iter->second;
 			ofs_human_readable_qmap << " visited = " << itercount->second << endl;
@@ -778,6 +781,7 @@ void QLearningMgr::writeQMapHumanReadable()
 		{
 			ofs_human_readable_qmapUnit << "State avgDps = " << TranslateGroupToWord(iterUnitMap->first.state.m_avgDpsGroup) << " avgHealth = " 
 				<< TranslateGroupToWord(iterUnitMap->first.state.m_avgHealthGroup) << " dist = " << TranslateGroupToWord(iterUnitMap->first.state.m_distToClosestEnemyGroup) 
+				<< " numUnitsInRadius = " << TranslateGroupToWord(iterUnitMap->first.state.m_numEnemyUnitsInRadius)
 				<< " action = " << TranslateActionToWord(iterUnitMap->first.action);
 			ofs_human_readable_qmapUnit << " q_value = " << iterUnitMap->second;
 			ofs_human_readable_qmapUnit << " visited = " << iterUnitCount->second << endl;
@@ -792,8 +796,6 @@ void QLearningMgr::writeQMapHumanReadable()
 			iterUnitCount++;
 		}
 	}
-
-
 
 	ofs_human_readable_qmapUnit.close();
 }
@@ -909,7 +911,7 @@ void QLearningMgr::writeQVars()
 UnitAction QLearningMgr::updateUnitQ(UnitState lastState, UnitAction lastUnitAction, Action lastSquadAction, UnitState stateNew)
 {
 	//DEBUG
-	static bool m_forceExploration = false;
+	static bool m_forceExploration = true;
 	static bool m_forceExploitation = false;
 	if(m_forceExploration)
 	{
@@ -1177,6 +1179,25 @@ float QLearningMgr::getRewardForUnitSquadAction(USApair usapair, UnitState state
 		reward += 20.0f; //Else, always follow squad orders
 	}
 
+
+	if(stateNew.m_numEnemyUnitsInRadius == HIGH)
+	{
+		reward -= 2.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == MID)
+	{
+		reward -= 1.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == LOW)
+	{
+		reward += 1.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == NA)
+	{
+		reward += 1.0f;
+	}
+
+
 	return reward;
 }
 
@@ -1338,6 +1359,23 @@ float QLearningMgr::getRewardForUnitAttack(USApair usapair, UnitState stateNew) 
 			}
 		}
 	}
+	
+	if(stateNew.m_numEnemyUnitsInRadius == HIGH)
+	{
+		reward -= 2.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == MID)
+	{
+		reward -= 1.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == LOW)
+	{
+		reward += 1.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == NA)
+	{
+		reward += 1.0f;
+	}
 
 	return reward;
 }
@@ -1408,6 +1446,23 @@ float QLearningMgr::getRewardForUnitHold(USApair usapair, UnitState stateNew) co
 				reward += -10.0f;
 			}
 		}
+	}
+
+	if(stateNew.m_numEnemyUnitsInRadius == HIGH)
+	{
+		reward -= 2.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == MID)
+	{
+		reward -= 1.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == LOW)
+	{
+		reward += 1.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == NA)
+	{
+		reward -= 2.0f;
 	}
 
 	return reward;
@@ -1481,6 +1536,24 @@ float QLearningMgr::getRewardForUnitFlee(USApair usapair, UnitState stateNew) co
 	{
 		//If fleeing is NOT a good option and we are getting away, decrease reward!
 		reward += -1.0f;
+	}
+
+
+	if(stateNew.m_numEnemyUnitsInRadius == HIGH)
+	{
+		reward += 2.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == MID)
+	{
+		reward += 1.0f;
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == LOW)
+	{
+		//0
+	}
+	else if(stateNew.m_numEnemyUnitsInRadius == NA)
+	{
+		reward -= 3.0f;
 	}
 
 	return reward;

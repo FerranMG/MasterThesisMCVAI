@@ -36,6 +36,7 @@ UnitState::UnitState()
 	m_avgDpsGroup = NA;
 	m_avgHealthGroup = NA;
 	m_distToClosestEnemyGroup = NA;
+	m_numEnemyUnitsInRadius = NA;
 	m_hitPoints = 0;
 	m_enemyHitPoints = 0;
 	m_lastUnitAction = UNIT_COUNT;
@@ -58,6 +59,11 @@ void UnitState::setAvgHealth(Group health)
 void UnitState::setSqDistToClosestEnemyGroup(Group dist)
 {
 	m_distToClosestEnemyGroup = dist;
+}
+
+void UnitState::setNumEnemyUnitsInRadius(Group numUnits)
+{
+	m_numEnemyUnitsInRadius = numUnits;
 }
 
 //////////////////////////////////////////////////////////////////////////

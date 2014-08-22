@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "Defines.h"
 
+#pragma optimize( "", off )
 
 typedef struct SApair
 {
@@ -14,18 +15,18 @@ typedef struct SApair
 	State state;
 	Action action;
 
-	bool operator<( const SApair& n) const
-	{
-		if (this->state.m_avgHealthGroup < n.state.m_avgHealthGroup)
-			return true;
-		if (this->state.m_avgDpsGroup < n.state.m_avgDpsGroup)
-			return true;
-		if (this->state.m_distToClosestEnemyGroup < n.state.m_distToClosestEnemyGroup)
-			return true;
-		if (this->action < n.action)
-			return true;
-		return false;
-	}
+	//bool operator<( const SApair& n) const
+	//{
+	//	if (this->state.m_avgHealthGroup < n.state.m_avgHealthGroup)
+	//		return true;
+	//	if (this->state.m_avgDpsGroup < n.state.m_avgDpsGroup)
+	//		return true;
+	//	if (this->state.m_distToClosestEnemyGroup < n.state.m_distToClosestEnemyGroup)
+	//		return true;
+	//	if (this->action < n.action)
+	//		return true;
+	//	return false;
+	//}
 
 
 } SApair;
@@ -39,18 +40,20 @@ typedef struct USApair
 	UnitState state;
 	UnitAction action;
 
-	bool operator<( const USApair& n) const
-	{
-		if (this->state.m_avgHealthGroup < n.state.m_avgHealthGroup)
-			return true;
-		if (this->state.m_avgDpsGroup < n.state.m_avgDpsGroup)
-			return true;
-		if (this->state.m_distToClosestEnemyGroup < n.state.m_distToClosestEnemyGroup)
-			return true;
-		if (this->action < n.action)
-			return true;
-		return false;
-	}
+	//bool operator<( const USApair& n) const
+	//{
+	//	if (this->state.m_avgHealthGroup < n.state.m_avgHealthGroup)
+	//		return true;
+	//	if (this->state.m_avgDpsGroup < n.state.m_avgDpsGroup)
+	//		return true;
+	//	if (this->state.m_distToClosestEnemyGroup < n.state.m_distToClosestEnemyGroup)
+	//		return true;
+	//	if (this->state.m_numEnemyUnitsInRadius < n.state.m_numEnemyUnitsInRadius)
+	//		return true;
+	//	if (this->action < n.action)
+	//		return true;
+	//	return false;
+	//}
 
 
 } USApair;
@@ -79,6 +82,14 @@ public:
 		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
 			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
 			&& sapair1.state.m_distToClosestEnemyGroup == sapair2.state.m_distToClosestEnemyGroup
+			&& sapair1.state.m_action < sapair2.state.m_action)
+		{
+			return true;
+		}
+		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
+			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
+			&& sapair1.state.m_distToClosestEnemyGroup == sapair2.state.m_distToClosestEnemyGroup
+			&& sapair1.state.m_action == sapair2.state.m_action
 			&& sapair1.action < sapair2.action)
 		{
 			return true;
@@ -115,6 +126,33 @@ public:
 		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
 			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
 			&& sapair1.state.m_distToClosestEnemyGroup == sapair2.state.m_distToClosestEnemyGroup
+			&& sapair1.state.m_numEnemyUnitsInRadius < sapair2.state.m_numEnemyUnitsInRadius)
+		{
+			return true;
+		}
+		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
+			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
+			&& sapair1.state.m_distToClosestEnemyGroup == sapair2.state.m_distToClosestEnemyGroup
+			&& sapair1.state.m_numEnemyUnitsInRadius == sapair2.state.m_numEnemyUnitsInRadius
+			&& sapair1.state.m_lastSquadAction < sapair2.state.m_lastSquadAction)
+		{
+			return true;
+		}
+		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
+			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
+			&& sapair1.state.m_distToClosestEnemyGroup == sapair2.state.m_distToClosestEnemyGroup
+			&& sapair1.state.m_numEnemyUnitsInRadius == sapair2.state.m_numEnemyUnitsInRadius
+			&& sapair1.state.m_lastSquadAction == sapair2.state.m_lastSquadAction
+			&& sapair1.state.m_lastUnitAction < sapair2.state.m_lastUnitAction)
+		{
+			return true;
+		}
+		else if(sapair1.state.m_avgHealthGroup == sapair2.state.m_avgHealthGroup
+			&& sapair1.state.m_avgDpsGroup == sapair2.state.m_avgDpsGroup
+			&& sapair1.state.m_distToClosestEnemyGroup == sapair2.state.m_distToClosestEnemyGroup
+			&& sapair1.state.m_numEnemyUnitsInRadius == sapair2.state.m_numEnemyUnitsInRadius
+			&& sapair1.state.m_lastSquadAction == sapair2.state.m_lastSquadAction
+			&& sapair1.state.m_lastUnitAction == sapair2.state.m_lastUnitAction
 			&& sapair1.action < sapair2.action)
 		{
 			return true;
@@ -158,6 +196,8 @@ public:
 	void resetForcedReward();
 	void resetForcedUnitReward();
 
+	std::string TranslateGroupToWord(Group group);
+	std::string TranslateActionToWord(int action);
 
 	static const int MAX_STATES_VISITED_BEFORE_TOTAL_EXPLOIT;
 	static const int MAX_NUM_GAMES_PLAYED_BEFORE_TOTAL_EXPLOIT;
@@ -183,11 +223,12 @@ private:
 	float getAlphaForUnit(USApair usapair);
 	float getRewardForUnit(USApair usapair, UnitState stateNew);
 	float RunAwayForUnit(const UnitState& stateLast, const UnitState& stateNew);
-	std::string TranslateGroupToWord(Group group);
-	std::string TranslateActionToWord(int action);
+
 
 	float getRewardForUnitSquadAction(USApair usapair, UnitState stateNew) const;
 	float getRewardForUnitAttack(USApair usapair, UnitState stateNew) const;
 	float getRewardForUnitHold(USApair usapair, UnitState stateNew) const;
 	float getRewardForUnitFlee(USApair usapair, UnitState stateNew) const;
 };
+
+#pragma optimize( "", on )

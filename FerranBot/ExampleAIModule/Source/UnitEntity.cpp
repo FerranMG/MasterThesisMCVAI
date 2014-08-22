@@ -281,7 +281,7 @@ bool UnitEntity::checkCanIssueNextAction()
 		|| (m_unitAction == SQUAD_ACTION && m_squadAction == ATTACK))
 	{
 		//Remove info from old FLEE or HOLD actions
-		if(m_frameCount <= 5)
+		if(m_frameCount <= 3)
 		{
 			m_canIssueNextAction = false;
 			return false;
@@ -319,7 +319,7 @@ bool UnitEntity::checkCanIssueNextAction()
 	}
 	else if(m_unitAction == SQUAD_ACTION && (m_squadAction == ATTACK_SURROUND || m_squadAction == ATTACK_HALF_SURROUND))
 	{
-		if(m_frameCount <= 5)
+		if(m_frameCount <= 3)
 		{
 			m_canIssueNextAction = false;
 			return false;
@@ -344,17 +344,17 @@ bool UnitEntity::checkCanIssueNextAction()
 		//Remove info from old ATTACK action
 		m_lastUnitAttacked = NULL;
 
-		if(m_unitAction == UNIT_HOLD && m_frameCount > 5)
+		if(m_unitAction == UNIT_HOLD && m_frameCount > 3)
 		{
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
 		}
-		else if(m_unitAction == UNIT_FLEE && m_frameCount > 10)
+		else if(m_unitAction == UNIT_FLEE && m_frameCount > 7)
 		{
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
 		}
-		else if(m_frameCount > 5)
+		else if(m_frameCount > 3)
 		{
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
@@ -381,6 +381,7 @@ UnitState UnitEntity::getCurrentUnitState() const
 	//assert(m_directEnemy);
 	setHealthInUnitState(state);
 	setDpsInUnitState(state);
+	setNumEnemyUnitsInRadiusUnitState(state);
 	setDistanceInUnitState(state);
 	setHitPointsInUnitState(state);
 	setEnemyHitPointsInUnitState(state);
@@ -663,4 +664,37 @@ bool UnitEntity::mustUpdateCurrentAction()
 void UnitEntity::resetCurrentActionTilePos()
 {
 	 m_currentActionTilePos = Position(-1, -1);
+}
+
+void UnitEntity::setNumEnemyUnitsInRadiusUnitState(UnitState& state) const
+{
+	SquadEntity* enemySquad = m_squad->getEnemySquad();
+	BWAPI::Unitset enemyUnits = enemySquad->getSquadUnits();
+
+	int numUnitsInEnemyRadius = 0;
+
+	for(Unitset::iterator u = enemyUnits.begin(); u != enemyUnits.end(); ++u)
+	{
+		if(Common::computeSqDistBetweenPoints(m_unit->getPosition(), u->getPosition()) < 40000)
+		{
+			++numUnitsInEnemyRadius;
+		}
+	}
+
+	if(numUnitsInEnemyRadius == 0)
+	{
+		state.setNumEnemyUnitsInRadius(NA);
+	}
+	else if(numUnitsInEnemyRadius == 1)
+	{
+		state.setNumEnemyUnitsInRadius(LOW);
+	}
+	else if(numUnitsInEnemyRadius == 2)
+	{
+		state.setNumEnemyUnitsInRadius(MID);
+	}
+	else
+	{
+		state.setNumEnemyUnitsInRadius(HIGH);
+	}
 }

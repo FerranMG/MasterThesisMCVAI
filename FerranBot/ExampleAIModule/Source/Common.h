@@ -49,6 +49,7 @@ struct UnitState
 	//AvgDps and avgHealth allow to easily get how dangerous an enemy group is. 
 	Group  m_avgDpsGroup; //sum(dps) / numUnits.
 	Group  m_avgHealthGroup; //LOW, MID, HIGH
+	Group  m_numEnemyUnitsInRadius;
 	Group  m_distToClosestEnemyGroup; //CLOSE, MID-RANGE, FAR
 	int    m_hitPoints;
 	int    m_enemyHitPoints;
@@ -59,6 +60,7 @@ struct UnitState
 	void setAvgDps(Group num);
 	void setAvgHealth(Group health);
 	void setSqDistToClosestEnemyGroup(Group dist);
+	void setNumEnemyUnitsInRadius(Group numUnits);
 
 };
 
