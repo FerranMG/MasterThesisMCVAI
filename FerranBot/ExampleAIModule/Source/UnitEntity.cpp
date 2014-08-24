@@ -319,7 +319,7 @@ bool UnitEntity::checkCanIssueNextAction()
 	}
 	else if(m_unitAction == SQUAD_ACTION && (m_squadAction == ATTACK_SURROUND || m_squadAction == ATTACK_HALF_SURROUND))
 	{
-		if(m_frameCount <= 3)
+		if(m_frameCount <= 5)
 		{
 			m_canIssueNextAction = false;
 			return false;
@@ -344,17 +344,17 @@ bool UnitEntity::checkCanIssueNextAction()
 		//Remove info from old ATTACK action
 		m_lastUnitAttacked = NULL;
 
-		if(m_unitAction == UNIT_HOLD && m_frameCount > 3)
+		if(m_unitAction == UNIT_HOLD && m_frameCount > 5)
 		{
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
 		}
-		else if(m_unitAction == UNIT_FLEE && m_frameCount > 7)
+		else if(m_unitAction == UNIT_FLEE && m_frameCount > 10)
 		{
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
 		}
-		else if(m_frameCount > 3)
+		else if(m_frameCount > 5)
 		{
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
@@ -444,7 +444,7 @@ void UnitEntity::checkDirectEnemy()
 
 void UnitEntity::setHealthInUnitState(UnitState& state) const
 {
-	if(!m_directEnemy)
+	if(!m_directEnemy || m_unit->getHitPoints() <= 0)
 	{
 		state.setAvgHealth(NA);
 		return;
@@ -468,7 +468,7 @@ void UnitEntity::setHealthInUnitState(UnitState& state) const
 
 void UnitEntity::setDpsInUnitState(UnitState& state) const
 {
-	if(!m_directEnemy)
+	if(!m_directEnemy || m_unit->getHitPoints() <= 0)
 	{
 		state.setAvgDps(NA);
 		return;
@@ -491,7 +491,7 @@ void UnitEntity::setDpsInUnitState(UnitState& state) const
 
 void UnitEntity::setDistanceInUnitState(UnitState& state) const
 {
-	if(!m_directEnemy)
+	if(!m_directEnemy || m_unit->getHitPoints() <= 0)
 	{
 		state.setSqDistToClosestEnemyGroup(NA);
 		return;
@@ -586,7 +586,7 @@ void UnitEntity::applySquadActionToUnit()
 		case ATTACK:
 		{
 			Unit unitToAttack = getSquad()->getUnitToAttack(this);
-			if(unitToAttack != m_lastUnitAttacked)
+			if(unitToAttack && unitToAttack != m_lastUnitAttacked)
 			{
 				getUnit()->attack(unitToAttack);
 				m_lastUnitAttacked = unitToAttack;

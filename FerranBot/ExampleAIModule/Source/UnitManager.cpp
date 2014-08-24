@@ -79,10 +79,25 @@ void UnitManager::update()
 			{
 				UnitAction unitAction = QLearningMgr::getInstance()->updateUnitQ(unit->getLastUnitState(), unit->getLastUnitAction(), unit->getLastSquadAction(), stateNew);
 
-				Broodwar->sendText("SquadAction %s ", QLearningMgr::getInstance()->TranslateActionToWord(unit->getCurrentSquadAction()).c_str(), " UnitAction %s " , QLearningMgr::getInstance()->TranslateActionToWord(unitAction).c_str());
+				Broodwar->sendText("SquadAction %s UnitAction %s", QLearningMgr::getInstance()->TranslateActionToWord(unit->getCurrentSquadAction()).c_str(), QLearningMgr::getInstance()->TranslateActionToWord(unitAction).c_str());
 
+				//if(unitAction != unit->getLastUnitAction())
+				//{
+				//	unit->resetCurrentActionTilePos();
+				//}
 
-				unit->setLastUnitAction(unit->getCurrentUnitAction());
+				//unit->setUnitAction(unitAction); //Current action will be used in applyCurrentUnitAction
+
+				////We store the current values as the last values.
+				//unit->setLastUnitAction(unitAction);
+				//unit->setLastUnitState(stateNew);
+				//unit->setLastSquadAction(unit->getCurrentSquadAction());
+
+				//unit->setCanIssueNextAction(false);
+				//
+
+				unit->setLastUnitAction(unitAction);
+				//unit->setLastUnitAction(unit->getCurrentUnitAction());
 				unit->setUnitAction(unitAction);
 				unit->setLastSquadAction(unit->getLastSquadAction());
 
@@ -112,7 +127,14 @@ void UnitManager::update()
 
 bool checkNoHitPoints(const UnitEntity* unitEntity)
 {
-	return unitEntity->getUnit()->getHitPoints() <= 0; 
+	if(unitEntity->getUnit()->getHitPoints() <= 0)
+	{
+		QLearningMgr::getInstance()->forceUnitReward(-1000);
+		QLearningMgr::getInstance()->updateUnitQ(unitEntity->getLastUnitState(), unitEntity->getLastUnitAction(), unitEntity->getLastSquadAction(), unitEntity->getCurrentUnitState());
+		return true;
+	}
+
+	return false; 
 }
 
 void UnitManager::removeDeadUnits()
