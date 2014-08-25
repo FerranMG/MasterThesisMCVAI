@@ -22,6 +22,15 @@ public:
 
 	std::vector<UnitEntity*> getAllUnitEntities() const;
 
+	void calculateNumEnemyUnitsKilledByFriendly();
+
+	static int s_friendlyUnitsAlive;
+	static int s_enemyUnitsAlive;
+	static int s_killedEnemyUnitsOld;
+	static int s_killedEnemyUnits;
+
+
+	static int s_killedEnemyUnitsByFriendly;
 
 private:
 	static UnitManager* instance;
@@ -30,4 +39,7 @@ private:
 	//bool checkNoHitPoints(const UnitEntity* unitEntity);
 	std::vector<UnitEntity*> m_allUnitEntities;
 
+	int getNumEnemyUnits();
+	int getNumFriendlyUnits();
+	int getNumEnemyUnitsKilled();
 };

@@ -10,6 +10,7 @@ SquadManager::SquadManager()
 {
 	m_squads = new std::vector<SquadEntity*>;
 	m_enemySquads = new std::vector<SquadEntity*>;
+	m_differentEnemyUnits = new BWAPI::Unitset;
 }
 
 SquadManager::~SquadManager()
@@ -57,6 +58,13 @@ void SquadManager::update()
 			m_enemySquads->at(0)->addUnit(it);
 			m_enemySquads->at(0)->m_absoluteNumberOfUnitsEverInSquad++;
 		}
+
+		if(m_differentEnemyUnits->find(*it) == m_differentEnemyUnits->end())
+		{
+			m_differentEnemyUnits->push_back(it);
+		}
+
+		
 	}
 
 

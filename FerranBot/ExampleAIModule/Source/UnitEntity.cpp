@@ -31,6 +31,8 @@ UnitEntity::UnitEntity(BWAPI::Unitset::iterator unit)
 	m_frameCount = 0;
 
 	m_hasUnitStartedAttack = false;
+
+	m_numUnitsKilled = 0;
 }
 
 
@@ -59,6 +61,14 @@ void UnitEntity::update()
 			Action lastSquadAction = currentSquad->getLastAction();
 			setLastSquadAction(lastSquadAction);
 		}
+	}
+
+
+	int numEnemiesKilled = getUnit()->getKillCount();
+	//For some strange reason, when a unit dies, getKillCount returns always 0
+	if(numEnemiesKilled > m_numUnitsKilled) 
+	{
+		m_numUnitsKilled = numEnemiesKilled;
 	}
 }
 
@@ -697,4 +707,9 @@ void UnitEntity::setNumEnemyUnitsInRadiusUnitState(UnitState& state) const
 	{
 		state.setNumEnemyUnitsInRadius(HIGH);
 	}
+}
+
+int UnitEntity::getNumUnitsKilled() const
+{
+	return m_numUnitsKilled;
 }

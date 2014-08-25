@@ -22,6 +22,9 @@ public:
 	//public because have to be deleted at ::onEnd
 	std::vector<SquadEntity*>* m_squads;
 	std::vector<SquadEntity*>* m_enemySquads;
+	
+	BWAPI::Unitset* m_differentEnemyUnits;
+	BWAPI::Unitset m_differentFriendlyUnits;
 
 private:
 	static SquadManager* instance;

@@ -43,6 +43,8 @@ public:
 	void setCurrentUnitToAttack(BWAPI::Unit enemyUnit);
 	void resetCurrentActionTilePos();
 
+	int getNumUnitsKilled() const;
+
 private:
 	void attackClosestEnemyUnit();
 	void holdPosition();
@@ -84,4 +86,6 @@ private:
 	Action		m_lastSquadAction;
 
 	bool m_hasUnitStartedAttack;
+
+	int m_numUnitsKilled;
 };
