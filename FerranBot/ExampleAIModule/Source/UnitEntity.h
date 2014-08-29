@@ -45,6 +45,12 @@ public:
 
 	int getNumUnitsKilled() const;
 
+	void setMustGetBackToFight(bool must);
+	bool getMustGetBackToFight() const {return m_getBackToFight;}
+	void applyMustGetBackToFight();
+
+	BWAPI::Position m_getBackToFightPos;
+
 private:
 	void attackClosestEnemyUnit();
 	void holdPosition();
@@ -88,4 +94,7 @@ private:
 	bool m_hasUnitStartedAttack;
 
 	int m_numUnitsKilled;
+
+	bool m_isFleeing;
+	bool m_getBackToFight;
 };

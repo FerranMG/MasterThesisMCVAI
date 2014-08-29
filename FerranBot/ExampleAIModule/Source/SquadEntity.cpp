@@ -723,10 +723,18 @@ void SquadEntity::setIsEnemySquad(bool yes)
 	m_isEnemySquad = yes;
 }
 
-BWAPI::Unit SquadEntity::getUnitToAttack(UnitEntity* unitEntity)
+bool SquadEntity::getUnitToAttack(UnitEntity* unitEntity, BWAPI::Unit& oUnitToAttack)
 {
 	assert(unitEntity->getCurrentSquadAction() == ATTACK);
-	return m_lastUnitAttacked;
+	if(m_lastUnitAttacked)
+	{
+		oUnitToAttack = m_lastUnitAttacked;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 BWAPI::Position SquadEntity::calculateActionTilePosForSurround(UnitEntity* unitEntity)

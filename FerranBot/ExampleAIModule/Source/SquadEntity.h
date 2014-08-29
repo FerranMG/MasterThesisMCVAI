@@ -81,7 +81,7 @@ public:
 	bool   getIsEnemySquad() const;
 	void   setIsEnemySquad(bool yes);
 
-	BWAPI::Unit getUnitToAttack(UnitEntity* unitEntity);
+	bool getUnitToAttack(UnitEntity* unitEntity, BWAPI::Unit& oUnitToAttack);
 	BWAPI::Position calculateActionTilePosForSurround(UnitEntity* unitEntity);
 	bool hasNewSurroundPositions() const;
 	bool canIssueNextAction();

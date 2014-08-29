@@ -33,6 +33,9 @@ UnitEntity::UnitEntity(BWAPI::Unitset::iterator unit)
 	m_hasUnitStartedAttack = false;
 
 	m_numUnitsKilled = 0;
+	m_isFleeing = false;
+	m_getBackToFight = false;
+	m_getBackToFightPos = Position(-1, -1);
 }
 
 
@@ -131,55 +134,87 @@ void UnitEntity::applyCurrentUnitAction()
 
 		case UNIT_FLEE:
 		{
+			UnitState currentState = getCurrentUnitState();
 			Position fleeingPoint = Position(0, 0);
-			if(m_directEnemy)
+
+			if(m_directEnemy && !m_isFleeing)
 			{
 				Position enemyPos = m_directEnemy->getPosition();
 				Position currentPos = getUnit()->getPosition();
 				int xDiff = std::abs(enemyPos.x - currentPos.x);
 				int yDiff = std::abs(enemyPos.y - currentPos.y);
 
-				if(xDiff < yDiff) //closer in the x axis than in the y axis => get away in the x axis
+				//If there's chances of winning the fight, only get away from the enemy unit, don't flee completely
+				if((currentState.m_avgDpsGroup == HIGH || currentState.m_avgDpsGroup == MID)
+					&&
+					(currentState.m_avgHealthGroup == HIGH || currentState.m_avgHealthGroup == MID))
 				{
-					if(currentPos.x < enemyPos.x)
+					if(xDiff < yDiff) //closer in the x axis than in the y axis => get away in the x axis
 					{
-						fleeingPoint.x = 0;
-						fleeingPoint.y = currentPos.y;
+						if(currentPos.x < enemyPos.x)
+						{
+							fleeingPoint.x = currentPos.x - 150;
+							fleeingPoint.y = currentPos.y;
+						}
+						else
+						{
+							fleeingPoint.x = currentPos.x + 150;
+							fleeingPoint.y = currentPos.y;
+						}
 					}
 					else
 					{
-						fleeingPoint.x = Broodwar->mapWidth();
-						fleeingPoint.y = currentPos.y;
+						if(currentPos.y < enemyPos.y)
+						{
+							fleeingPoint.x = currentPos.x;
+							fleeingPoint.y = currentPos.y - 150;
+						}
+						else
+						{
+							fleeingPoint.x = currentPos.x;
+							fleeingPoint.y = currentPos.y + 150;
+						}
 					}
 				}
 				else
 				{
-					if(currentPos.y < enemyPos.y)
+					//Get away from the current enemy.
+					if(xDiff < yDiff) //closer in the x axis than in the y axis => get away in the x axis
 					{
-						fleeingPoint.x = currentPos.x;
-						fleeingPoint.y = 0;
+						if(currentPos.x < enemyPos.x)
+						{
+							fleeingPoint.x = 0;
+							fleeingPoint.y = currentPos.y;
+						}
+						else
+						{
+							fleeingPoint.x = Broodwar->mapWidth();
+							fleeingPoint.y = currentPos.y;
+						}
 					}
 					else
 					{
-						fleeingPoint.x = currentPos.x;
-						fleeingPoint.y = Broodwar->mapHeight();
+						if(currentPos.y < enemyPos.y)
+						{
+							fleeingPoint.x = currentPos.x;
+							fleeingPoint.y = 0;
+						}
+						else
+						{
+							fleeingPoint.x = currentPos.x;
+							fleeingPoint.y = Broodwar->mapHeight();
+						}
 					}
 				}
 			}
 
-			if(m_currentActionTilePos == Position(-1, -1) || m_currentActionTilePos != fleeingPoint)
+			if((m_currentActionTilePos == Position(-1, -1) || m_currentActionTilePos != fleeingPoint) && !m_isFleeing)
 			{
 				getUnit()->move(fleeingPoint);
 				m_currentActionTilePos = fleeingPoint;
 				m_frameCount = 0;
+				m_isFleeing = true;
 			}
-		}
-		break;
-
-
-		default:
-		{
-
 		}
 		break;
 	}
@@ -287,6 +322,11 @@ bool UnitEntity::checkCanIssueNextAction()
 		return false;
 	}
 
+	if(m_getBackToFight)
+	{
+		return false;
+	}
+
 	if(m_unitAction == UNIT_ATTACK
 		|| (m_unitAction == SQUAD_ACTION && m_squadAction == ATTACK))
 	{
@@ -359,10 +399,22 @@ bool UnitEntity::checkCanIssueNextAction()
 			m_canIssueNextAction = true;
 			m_frameCount = 0;
 		}
-		else if(m_unitAction == UNIT_FLEE && m_frameCount > 10)
+		else if(m_unitAction == UNIT_FLEE)
+		//else if(m_unitAction == UNIT_FLEE && m_frameCount > 10)
 		{
-			m_canIssueNextAction = true;
-			m_frameCount = 0;
+			Position currentPos = getUnit()->getPosition();
+			bool isMoving = getUnit()->isMoving();
+			if(Common::computeSqDistBetweenPoints(m_currentActionTilePos, currentPos) < 1000)
+			{
+				m_canIssueNextAction = true;
+				m_frameCount = 0;
+				m_isFleeing = false;
+				m_currentActionTilePos = Position(-1, -1);
+			}
+			else if(!isMoving) //Fucking hack. The unit was turning back and attacking the enemies, despite being told to move.
+			{
+				getUnit()->move(m_currentActionTilePos);
+			}
 		}
 		else if(m_frameCount > 5)
 		{
@@ -595,11 +647,16 @@ void UnitEntity::applySquadActionToUnit()
 	{
 		case ATTACK:
 		{
-			Unit unitToAttack = getSquad()->getUnitToAttack(this);
-			if(unitToAttack && unitToAttack != m_lastUnitAttacked)
+			Unit oUnitToAttack;
+			bool isValid = getSquad()->getUnitToAttack(this, oUnitToAttack);
+			if(isValid && oUnitToAttack && oUnitToAttack != m_lastUnitAttacked)
 			{
-				getUnit()->attack(unitToAttack);
-				m_lastUnitAttacked = unitToAttack;
+				if(oUnitToAttack != (BWAPI::Unit)0xcdcdcdcd)
+				{
+					getUnit()->attack(oUnitToAttack);
+					m_lastUnitAttacked = oUnitToAttack;
+				}
+
 			}
 			else if(Common::computeSqDistBetweenPoints(m_currentActionTilePos, getUnit()->getPosition()) > 10000)
 			{
@@ -654,7 +711,12 @@ void UnitEntity::applySquadActionToUnit()
 
 bool UnitEntity::mustUpdateCurrentAction()
 {
-	if(m_squadAction == ATTACK_SURROUND || m_squadAction == ATTACK_HALF_SURROUND)
+	if(m_getBackToFight)
+	{
+		return true;
+	}
+
+	if((m_squadAction == ATTACK_SURROUND || m_squadAction == ATTACK_HALF_SURROUND) && m_unitAction == SQUAD_ACTION)
 	{
 		//Position posToMove = getSquad()->getActionTilePosForSurround(this);
 
@@ -667,6 +729,22 @@ bool UnitEntity::mustUpdateCurrentAction()
 			return true;
 		}
 	}
+
+	//If there's possibilities of winning the fight, be we have lost track of the enemy units, try to get back to them.
+	UnitState currentState = getCurrentUnitState();
+	if( (currentState.m_avgDpsGroup == HIGH || currentState.m_avgDpsGroup == MID)
+		&&
+		(currentState.m_avgHealthGroup == HIGH || currentState.m_avgHealthGroup == MID))
+	{
+		if(currentState.m_numEnemyUnitsInRadius == NA)
+		{
+			m_getBackToFight = true;
+			return true;
+		}
+	}
+
+
+
 
 	return false;
 }
@@ -712,4 +790,23 @@ void UnitEntity::setNumEnemyUnitsInRadiusUnitState(UnitState& state) const
 int UnitEntity::getNumUnitsKilled() const
 {
 	return m_numUnitsKilled;
+}
+
+void UnitEntity::applyMustGetBackToFight()
+{
+	if(m_directEnemy && m_getBackToFightPos == Position(-1, -1))
+	{
+		//Attack to a mid position between currentPos and enemyPos
+		Position currentPos = getUnit()->getPosition();
+		Position enemyPos = m_directEnemy->getPosition();
+		int dx = (enemyPos.x - currentPos.x) / 2;
+		int dy = (enemyPos.y - currentPos.y) / 2;
+		m_getBackToFightPos = Position(dx + currentPos.x, dy + currentPos.y);
+		getUnit()->attack(m_getBackToFightPos);
+	}
+}
+
+void UnitEntity::setMustGetBackToFight(bool must)
+{
+	m_getBackToFight = must;
 }

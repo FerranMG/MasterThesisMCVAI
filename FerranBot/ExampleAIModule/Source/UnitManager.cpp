@@ -89,23 +89,7 @@ void UnitManager::update()
 
 				Broodwar->sendText("GameNum %d GamesWon %d SquadAction %s UnitAction %s", QLearningMgr::getInstance()->m_numGamesPlayed, QLearningMgr::getInstance()->m_numGamesWon, QLearningMgr::getInstance()->TranslateActionToWord(unit->getCurrentSquadAction()).c_str(), QLearningMgr::getInstance()->TranslateActionToWord(unitAction).c_str());
 
-				//if(unitAction != unit->getLastUnitAction())
-				//{
-				//	unit->resetCurrentActionTilePos();
-				//}
-
-				//unit->setUnitAction(unitAction); //Current action will be used in applyCurrentUnitAction
-
-				////We store the current values as the last values.
-				//unit->setLastUnitAction(unitAction);
-				//unit->setLastUnitState(stateNew);
-				//unit->setLastSquadAction(unit->getCurrentSquadAction());
-
-				//unit->setCanIssueNextAction(false);
-				//
-
 				unit->setLastUnitAction(unitAction);
-				//unit->setLastUnitAction(unit->getCurrentUnitAction());
 				unit->setUnitAction(unitAction);
 				unit->setLastSquadAction(unit->getLastSquadAction());
 
@@ -122,7 +106,36 @@ void UnitManager::update()
 			}
 			else if(unit->mustUpdateCurrentAction())
 			{
-				unit->applyCurrentUnitAction();
+				if(unit->m_getBackToFightPos == Position(-1, -1) && unit->getMustGetBackToFight())
+				{
+					unit->applyMustGetBackToFight();
+				}
+				else if(unit->getMustGetBackToFight())
+				{
+					//If it has found units, can issue next action true
+					if(unit->getCurrentUnitState().m_numEnemyUnitsInRadius != NA)
+					{
+						unit->setMustGetBackToFight(false);
+						unit->m_getBackToFightPos = Position(-1, -1);
+						unit->setCanIssueNextAction(true);
+					}
+					else if(Common::computeSqDistBetweenPoints(unit->m_getBackToFightPos, unit->getUnit()->getPosition()) < 1000)//else, do the same again
+					{
+						unit->setMustGetBackToFight(true);
+						unit->m_getBackToFightPos = Position(-1, -1);
+						unit->applyMustGetBackToFight();
+					}
+					else if(!unit->getUnit()->isMoving())
+					{
+						unit->setMustGetBackToFight(true);
+						unit->m_getBackToFightPos = Position(-1, -1);
+						unit->applyMustGetBackToFight();
+					}
+				}
+				else
+				{
+					unit->applyCurrentUnitAction();
+				}
 			}
 
 			unit->checkCanIssueNextAction();
